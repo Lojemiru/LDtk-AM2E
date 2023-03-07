@@ -163,7 +163,7 @@ class EntityRender extends dn.Process {
 						// Invert flips to prevent broken rendering.
 						t.xFlip = false;
 						t.yFlip = false;
-						var tt = new dn.heaps.TiledTexture(t, w,h, wrapper);
+						var tt = new dn.heaps.TiledTexture(w, h, t, wrapper);
 
 						tt.alpha = alpha;
 						tt.x = -w*pivotX + (ld==null ? 0 : ld.pxOffsetX);
