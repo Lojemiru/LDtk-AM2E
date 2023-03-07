@@ -16,7 +16,6 @@ class Project {
 	public var iid(default,null) : String;
 	public var defs : Definitions;
 	public var worlds : Array<World> = [];
-	var dummyWorldIid : String;
 
 	public var jsonVersion : String;
 	public var appBuildId : Float;
@@ -296,13 +295,6 @@ class Project {
 
 		p.defs = Definitions.fromJson(p, json.defs);
 
-		var invalidateLevelCache = false;
-		if( json.dummyWorldIid==null ) {
-			json.dummyWorldIid = p.generateUniqueId_UUID();
-			invalidateLevelCache = true;
-		}
-		p.dummyWorldIid = json.dummyWorldIid;
-
 		if( p.hasFlag(MultiWorlds) ) {
 			// Read normal worlds array
 			for( worldJson in JsonTools.readArray(json.worlds) )
@@ -334,12 +326,6 @@ class Project {
 		if( Version.lower(json.jsonVersion, "0.10", true) )
 			p.setFlag(PrependIndexToLevelFileNames, true);
 
-		// Fix dummy world IID
-		if( invalidateLevelCache )
-			for(w in p.worlds)
-			for(l in w.levels)
-				l.invalidateJsonCache();
-
 		p.jsonVersion = Const.getJsonVersion(); // always uses latest version
 		return p;
 	}
@@ -360,20 +346,11 @@ class Project {
 	}
 
 	public inline function setFlag(f:ldtk.Json.ProjectFlag, v:Bool) {
-		if( f!=null ) {
-			var old = hasFlag(f);
-
+		if( f!=null )
 			if( v )
 				flags.set(f,true);
 			else
 				flags.remove(f);
-
-			if( old!=hasFlag(f) )
-				onFlagChange(f, hasFlag(f));
-		}
-	}
-
-	function onFlagChange(f:ldtk.Json.ProjectFlag, active:Bool) {
 	}
 
 	public inline function registerUsedColor(tag:String, c:Null<Int>) {
@@ -625,7 +602,6 @@ class Project {
 			defs: defs.toJson(this),
 			levels: hasFlag(MultiWorlds) ? [] : worlds[0].levels.map( (l)->l.toJson() ),
 			worlds: hasFlag(MultiWorlds) ? worlds.map( (w)->w.toJson() ) : [],
-			dummyWorldIid: dummyWorldIid,
 
 			// toc: {
 			// 	var jsonToc : Array<ldtk.Json.TableOfContentEntry> = [];
@@ -933,8 +909,7 @@ class Project {
 	/**  WORLDS  **************************************/
 
 	public function createWorld(alsoCreateLevel:Bool) : World {
-		var worldIid = hasFlag(MultiWorlds) ? generateUniqueId_UUID() : dummyWorldIid;
-		var w = new data.World(this, worldIid, "World");
+		var w = new data.World(this, generateUniqueId_UUID(), "World");
 		w.identifier = fixUniqueIdStr( w.identifier, (id)->isWorldIdentifierUnique(id,w) );
 		worlds.push(w);
 

@@ -46,7 +46,7 @@ class ProjectLoader {
 		var p : data.Project = null;
 
 
-		// Load JSON file
+		// Parse main JSON
 		progress.addOp({
 			label: 'Reading $fileName...',
 			cb: ()->{
@@ -59,7 +59,6 @@ class ProjectLoader {
 			}
 		});
 
-		// Parse main JSON
 		progress.addOp({
 			label: "Parsing JSON...",
 			cb: ()->{
@@ -93,7 +92,6 @@ class ProjectLoader {
 		});
 
 
-		// Create Project instance
 		progress.addOp({
 			label: "Reading project...",
 			cb: ()->{
@@ -108,7 +106,6 @@ class ProjectLoader {
 			}
 		});
 
-		// Load external levels (optional)
 		progress.addOp({
 			label: "Loading levels...",
 			cb: ()->{
@@ -176,7 +173,7 @@ class ProjectLoader {
 			}
 		});
 
-		// Init quick level access
+
 		progress.addOp({
 			label: "Init quick level access...",
 			cb: ()->p.resetQuickLevelAccesses(),
