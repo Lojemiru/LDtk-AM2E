@@ -127,11 +127,9 @@ class Modal extends dn.Process {
 
 	public static function closeAll(?except:Modal) {
 		var any = false;
-
-		var w = ALL.length;
-		while (--w >= 0)
-			if ( !ALL[w].isClosing() && ( except==null || ALL[w]!=except ) && ALL[w].canBeClosedManually ) {
-				ALL[w].close();
+		for(w in ALL)
+			if( !w.isClosing() && ( except==null || w!=except ) && w.canBeClosedManually ) {
+				w.close();
 				any = true;
 			}
 		return any;
