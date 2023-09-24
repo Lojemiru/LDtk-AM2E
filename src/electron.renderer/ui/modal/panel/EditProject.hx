@@ -25,81 +25,19 @@ class EditProject extends ui.modal.Panel {
 		showAdvanced = project.hasAnyFlag(allAdvancedOptions);
 
 		var jSave = jContent.find("button.save").click( function(ev) {
-			editor.onSave();
+			editor.executeAppCommand(C_SaveProject);
 			if( project.isBackup() )
 				close();
 		});
 		if( project.isBackup() )
 			jSave.text(L.t._("Restore this backup"));
 
-		var jSaveAs = jContent.find("button.saveAs").click( function(ev) {
-			editor.onSave(true);
-		});
+		var jSaveAs = jContent.find("button.saveAs").click( _->editor.executeAppCommand(C_SaveProjectAs) );
 		if( project.isBackup() )
 			jSaveAs.hide();
 
 
-		var jRename = jContent.find("button.rename").click( function(ev) {
-			new ui.modal.dialog.InputDialog(
-				L.t._("Enter the new project file name :"),
-				project.filePath.fileName,
-				project.filePath.extWithDot,
-				(str)->{
-					if( str==null || str.length==0 )
-						return L.t._("Invalid file name");
-
-					var clean = dn.FilePath.cleanUp(str, true);
-					if( clean.length==0 )
-						return L.t._("Invalid file name");
-
-					if( project.filePath.fileName==str )
-						return L.t._("Enter a new project file name.");
-
-					var newPath = project.filePath.directoryWithSlash + str + project.filePath.extWithDot;
-					if( NT.fileExists(newPath) )
-						return L.t._("This file name is already in use.");
-
-					return null;
-				},
-				(str)->{
-					return dn.FilePath.cleanUpFileName(str);
-				},
-				(fileName)->{
-					// Rename project
-					App.LOG.fileOp('Renaming project: ${project.filePath.fileName} -> $fileName');
-					try {
-						// Rename project file
-						App.LOG.fileOp('  Renaming project file...');
-						var oldProjectPath = project.filePath.full;
-						var oldExtDir = project.getAbsExternalFilesDir();
-						project.filePath.fileName = fileName;
-
-						// Rename sub dir
-						if( NT.fileExists(oldExtDir) ) {
-							App.LOG.fileOp('  Renaming project sub dir...');
-							NT.renameFile(oldExtDir, project.getAbsExternalFilesDir());
-						}
-
-						// Re-save project
-						editor.invalidateAllLevelsCache();
-						App.LOG.fileOp('  Saving project...');
-						new ui.ProjectSaver(this, project, (success)->{
-							// Remove old project file
-							App.LOG.fileOp('  Deleting old project file...');
-							NT.removeFile(oldProjectPath);
-							App.ME.unregisterRecentProject(oldProjectPath);
-
-							// Success!
-							N.success("Renamed project!");
-							editor.needSaving = false;
-							editor.updateTitle();
-							App.ME.registerRecentProject(editor.project.filePath.full);
-							App.LOG.fileOp('  Done.');
-						});
-					}
-				}
-			);
-		});
+		var jRename = jContent.find("button.rename").click( _->editor.executeAppCommand(C_RenameProject) );
 		if( project.isBackup() )
 			jRename.hide();
 
@@ -217,18 +155,54 @@ class EditProject extends ui.modal.Panel {
 		i.linkEvent(ProjectSettingsChanged);
 		var jLocate = i.jInput.siblings(".locate").empty();
 		if( project.backupOnSave )
-			jLocate.append( JsTools.makeLocateLink(project.getAbsExternalFilesDir()+"/backups", false) );
+			jLocate.append( JsTools.makeLocateLink(project.getAbsBackupDir(), false) );
 		var jCount = jForms.find("#backupCount");
+		var jBackupPath = jForms.find(".curBackupPath");
+		var jResetBackup = jForms.find(".resetBackupPath");
 		jCount.val( Std.string(Const.DEFAULT_BACKUP_LIMIT) );
 		if( project.backupOnSave ) {
+			jBackupPath.show();
+
 			jCount.show();
 			jCount.siblings("span").show();
 			var i = Input.linkToHtmlInput( project.backupLimit, jCount );
 			i.setBounds(3, 50);
+			i.linkEvent(ProjectSettingsChanged);
+
+			jBackupPath.text( project.backupRelPath==null ? "[Default dir]" : "[Custom dir]" );
+			if( project.backupRelPath==null )
+				jBackupPath.removeAttr("title");
+			else
+				jBackupPath.attr("title", project.backupRelPath);
+
+			jBackupPath.click(_->{
+				var absPath = project.getAbsBackupDir();
+				if( !NT.fileExists(absPath) )
+					absPath = project.filePath.full;
+
+				dn.js.ElectronDialogs.openDir(absPath, (dirPath)->{
+					var fp = dn.FilePath.fromDir(dirPath);
+					fp.useSlashes();
+					fp.makeRelativeTo(project.filePath.directory);
+					project.backupRelPath = fp.full;
+					editor.ge.emit(ProjectSettingsChanged);
+				});
+			});
+			jResetBackup.find(".reset");
+			if( project.backupRelPath==null )
+				jResetBackup.hide();
+			else
+				jResetBackup.show().click( (ev:js.jquery.Event)->{
+					ev.preventDefault();
+					project.backupRelPath = null;
+					editor.ge.emit(ProjectSettingsChanged);
+				});
 		}
 		else {
 			jCount.hide();
 			jCount.siblings("span").hide();
+			jBackupPath.hide();
+			jResetBackup.hide();
 		}
 		jForms.find(".backupRecommend").css("visibility", project.recommendsBackup() ? "visible" : "hidden");
 
@@ -434,6 +408,16 @@ class EditProject extends ui.modal.Panel {
 
 		// Level grid size
 		var i = Input.linkToHtmlInput( project.defaultGridSize, jForms.find("[name=defaultGridSize]") );
+		i.setBounds(1,Const.MAX_GRID_SIZE);
+		i.linkEvent(ProjectSettingsChanged);
+
+
+		// Default entity size
+		var i = Input.linkToHtmlInput( project.defaultEntityWidth, jForms.find("[name=defaultEntityWidth]") );
+		i.setBounds(1,Const.MAX_GRID_SIZE);
+		i.linkEvent(ProjectSettingsChanged);
+
+		var i = Input.linkToHtmlInput( project.defaultEntityHeight, jForms.find("[name=defaultEntityHeight]") );
 		i.setBounds(1,Const.MAX_GRID_SIZE);
 		i.linkEvent(ProjectSettingsChanged);
 

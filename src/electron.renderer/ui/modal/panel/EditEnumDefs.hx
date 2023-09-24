@@ -2,6 +2,7 @@ package ui.modal.panel;
 
 class EditEnumDefs extends ui.modal.Panel {
 	var curEnum : Null<data.def.EnumDef>;
+	var search : QuickSearch;
 
 	public function new() {
 		super();
@@ -95,6 +96,10 @@ class EditEnumDefs extends ui.modal.Panel {
 			});
 
 		});
+
+		// Create quick search
+		search = new ui.QuickSearch( jContent.find(".enumList ul") );
+		search.jWrapper.appendTo( jContent.find(".search") );
 
 		// Default enum selection
 		if( project.defs.enums.length>0 )
@@ -190,9 +195,11 @@ class EditEnumDefs extends ui.modal.Panel {
 		for( group in tagGroups) {
 			// Tag name
 			if( tagGroups.length>1 ) {
-				var jSep = new J('<li class="title fixed"/>');
+				var jSep = new J('<li class="title collapser"/>');
 				jSep.text( group.tag==null ? L._Untagged() : group.tag );
 				jSep.appendTo(jEnumList);
+				jSep.attr("id", project.iid+"_enum_tag_"+group.tag);
+				jSep.attr("default", "open");
 
 				// Rename
 				if( group.tag!=null ) {
@@ -206,13 +213,13 @@ class EditEnumDefs extends ui.modal.Panel {
 				}
 			}
 
-			var jLi = new J('<li class="subList"/>');
+			var jLi = new J('<li class="subList draggable"/>');
 			jLi.appendTo(jEnumList);
 			var jSubList = new J('<ul/>');
 			jSubList.appendTo(jLi);
 
 			for(ed in group.all) {
-				var jLi = new J("<li/>");
+				var jLi = new J('<li class="draggable"/>');
 				jLi.appendTo(jSubList);
 				jLi.data("uid", ed.uid);
 				if( ed==curEnum )
@@ -270,7 +277,7 @@ class EditEnumDefs extends ui.modal.Panel {
 				var moved = project.defs.sortEnumDef(fromIdx, toIdx);
 				selectEnum(moved);
 				editor.ge.emit(EnumDefSorted);
-			});
+			}, { onlyDraggables:true });
 
 		}
 
@@ -279,29 +286,31 @@ class EditEnumDefs extends ui.modal.Panel {
 			var fullPath = project.makeAbsoluteFilePath(group.key);
 
 			// Source name
-			var e = new J("<li/>");
-			e.addClass("title fixed");
-			e.appendTo(jEnumList);
+			var jSep = new J("<li/>");
+			jSep.appendTo(jEnumList);
+			jSep.addClass("title collapser");
 			var name = dn.FilePath.fromFile(group.key).fileWithExt;
-			e.html('<span>$name</span>');
+			jSep.html('<span>$name</span>');
+			jSep.attr("id", project.iid+"_entity_tag_"+name);
+			jSep.attr("default", "open");
 
 			// Check file
 			var fileExists = NT.fileExists(fullPath);
 			if( !fileExists ) {
-				e.addClass("missing");
-				e.append('<div class="error">File not found!</div>');
+				jSep.addClass("missing");
+				jSep.append('<div class="error">File not found!</div>');
 			}
 			else {
 				var checksum = haxe.crypto.Md5.encode( NT.readFileString(fullPath) );
 				for( ed in group.value )
 					if( ed.externalFileChecksum!=checksum ) {
-						e.append('<div class="error">File was modified, please use sync.</div>');
+						jSep.append('<div class="error">File was modified, please use sync.</div>');
 						break;
 					}
 			}
 
 			var links = new J('<div class="links"/>');
-			links.appendTo(e);
+			links.appendTo(jSep);
 
 			// Sync button
 			var jSync = new J('<a> <span class="icon refresh"/> </a>');
@@ -327,22 +336,25 @@ class EditEnumDefs extends ui.modal.Panel {
 				Tip.attach(jDelete, Lang.t._("Remove this external Enum source"));
 			}
 
+			var jSubList = new J('<li class="subList"> <ul></ul> </li>');
+			jSubList.appendTo(jEnumList);
+			jSubList = jSubList.children("ul");
+
 			// Values
 			for(ed in group.value) {
-				var e = new J("<li/>");
-				e.addClass("fixed");
+				var jLi = new J("<li/>");
+				jLi.appendTo(jSubList);
 				if( !fileExists )
-					e.addClass("missing");
-				e.appendTo(jEnumList);
+					jLi.addClass("missing");
 				if( ed==curEnum )
-					e.addClass("active");
-				e.append('<span class="name">'+ed.identifier+'</span>');
-				e.click( function(_) {
+					jLi.addClass("active");
+				jLi.append('<span class="name">'+ed.identifier+'</span>');
+				jLi.click( _->{
 					selectEnum(ed);
 				});
 
 
-				ContextMenu.addTo(e, [
+				ContextMenu.addTo(jLi, [
 					{
 						label: L.t._("Remove extern source"),
 						cb: deleteEnumDef.bind(ed,true),
@@ -358,7 +370,9 @@ class EditEnumDefs extends ui.modal.Panel {
 		// 	editor.ge.emit(EnumDefSorted);
 		// });
 
+		JsTools.parseComponents(jEnumList);
 		checkBackup();
+		search.run();
 	}
 
 
@@ -410,7 +424,7 @@ class EditEnumDefs extends ui.modal.Panel {
 		jDefForm.find("#tags").empty().append(ted.jEditor);
 
 		// Tilesets
-		JsTools.createTilesetSelect(
+		var jSelect = JsTools.createTilesetSelect(
 			project,
 			jDefForm.find("select#icons"),
 			curEnum.iconTilesetUid,
@@ -419,7 +433,7 @@ class EditEnumDefs extends ui.modal.Panel {
 				// Check if a LastChance is needed
 				if( curEnum.iconTilesetUid!=null )
 					for( v in curEnum.values )
-						if( v.tileId!=null ) {
+						if( v.tileRect!=null ) {
 							new LastChance(Lang.t._("Enum icons changed"), project);
 							break;
 						}
@@ -434,6 +448,10 @@ class EditEnumDefs extends ui.modal.Panel {
 
 			}
 		);
+		if( !curEnum.allowValueCustomization() )
+			jSelect.attr("disabled","true");
+		else
+			jSelect.removeAttr("disabled");
 
 		// Values
 		var jValuesList = jFormWrapper.find("ul.enumValues");
@@ -471,15 +489,20 @@ class EditEnumDefs extends ui.modal.Panel {
 				editor.ge.emit(EnumDefChanged);
 			});
 			jColor.val( C.intToHex(eValue.color) );
+			if( !curEnum.allowValueCustomization() )
+				jColor.attr("disabled","true");
+			else
+				jColor.removeAttr("disabled");
 
 			// Tile preview
-			var jPicker = JsTools.createTilePicker(
+			var jPicker = JsTools.createTileRectPicker(
 				curEnum.iconTilesetUid,
-				PickAndClose,
-				eValue.tileId==null ? [] : [eValue.tileId],
-				(tileIds)->{
-					eValue.tileId = tileIds[0];
-					eValue.color = -1;
+				eValue.tileRect,
+				curEnum.allowValueCustomization(),
+				(r)->{
+					if( r==null )
+						return;
+					eValue.tileRect = r;
 					curEnum.tidy(project);
 					editor.ge.emit(EnumDefChanged);
 				}
@@ -530,8 +553,10 @@ class EditEnumDefs extends ui.modal.Panel {
 			JsTools.focusScrollableList( jFormWrapper.find("ul.enumValues"), jElem);
 		});
 
-		if( curEnum.isExternal() )
+		if( curEnum.isExternal() ) {
 			jFormWrapper.find("input").not("xml input").attr("readonly", "readonly");
+			jFormWrapper.find("select").not("xml select").attr("readonly", "readonly");
+		}
 
 		// Make fields list sortable
 		if( !curEnum.isExternal() )

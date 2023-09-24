@@ -25,15 +25,17 @@ class EntityDef {
 	public var nineSliceBorders : Array<Int>;
 	public var tilesetId : Null<Int>;
 	public var tileRect : Null<ldtk.Json.TilesetRect>;
+	public var uiTileRect : Null<ldtk.Json.TilesetRect>;
 	public var _oldTileId : Null<Int>;
 
 	public var hollow : Bool;
 
 	public var resizableX : Bool;
 	public var resizableY : Bool;
-	public var flippableX : Bool;
-	public var flippableY : Bool;
-	public var flipAroundPivot : Bool;
+	public var minWidth : Null<Int>;
+	public var maxWidth : Null<Int>;
+	public var minHeight : Null<Int>;
+	public var maxHeight : Null<Int>;
 	public var keepAspectRatio : Bool;
 	public var pivotX(default,set) : Float;
 	public var pivotY(default,set) : Float;
@@ -53,7 +55,8 @@ class EntityDef {
 		fillOpacity = 1;
 		lineOpacity = 1;
 		renderMode = Rectangle;
-		width = height = 16;
+		width = p.defaultEntityWidth;
+		height = p.defaultEntityHeight;
 		maxCount = 0;
 		showName = true;
 		limitBehavior = MoveLastOne;
@@ -63,8 +66,6 @@ class EntityDef {
 		identifier = "Entity"+uid;
 		setPivot(0.5,1);
 		resizableX = resizableY = false;
-		flippableX = flippableY = false;
-		flipAroundPivot = false;
 		keepAspectRatio = false;
 		hollow = false;
 		tags = new Tags();
@@ -94,14 +95,6 @@ class EntityDef {
 			return tileRect;
 		else
 			return null;
-	}
-
-	public inline function getFlippedPivotX() {
-		return flipAroundPivot ? ((width - 1) / width) - pivotX : pivotX;
-	}
-
-	public inline function getFlippedPivotY() {
-		return flipAroundPivot ? ((height - 1) / height) - pivotY : pivotY;
 	}
 
 	function set_identifier(id:String) {
@@ -156,9 +149,10 @@ class EntityDef {
 		o.height = JsonTools.readInt( json.height, 16 );
 		o.resizableX = JsonTools.readBool( json.resizableX, false );
 		o.resizableY = JsonTools.readBool( json.resizableY, false );
-		o.flippableX = JsonTools.readBool( json.flippableX, false );
-		o.flippableY = JsonTools.readBool( json.flippableY, false );
-		o.flipAroundPivot = JsonTools.readBool( json.flipAroundPivot, false );
+		o.minWidth = JsonTools.readNullableInt( json.minWidth );
+		o.maxWidth = JsonTools.readNullableInt( json.maxWidth );
+		o.minHeight = JsonTools.readNullableInt( json.minHeight );
+		o.maxHeight = JsonTools.readNullableInt( json.maxHeight );
 		o.keepAspectRatio = JsonTools.readBool( json.keepAspectRatio, false );
 		o.doc = JsonTools.unescapeString( json.doc );
 
@@ -175,9 +169,10 @@ class EntityDef {
 		o.showName = JsonTools.readBool(json.showName, true);
 		o.tilesetId = JsonTools.readNullableInt(json.tilesetId);
 		o._oldTileId = JsonTools.readNullableInt(json.tileId);
-		o.tileRect = JsonTools.readTileRect(json.tilesetId, json.tileRect, true);
+		o.tileRect = JsonTools.readTileRect(json.tileRect, true);
 		if( o.tileRect!=null && o.tileRect.tilesetUid==null )
 			o.tileRect.tilesetUid = o.tilesetId;
+		o.uiTileRect = JsonTools.readTileRect(json.uiTileRect, true);
 
 		if( (cast json.tileRenderMode)=="Crop" ) json.tileRenderMode = cast "Cover";
 		o.tileRenderMode = JsonTools.readEnum(ldtk.Json.EntityTileRenderMode, json.tileRenderMode, false, FitInside);
@@ -212,9 +207,10 @@ class EntityDef {
 			height: height,
 			resizableX: resizableX,
 			resizableY: resizableY,
-			flippableX: flippableX,
-			flippableY: flippableY,
-			flipAroundPivot: flipAroundPivot,
+			minWidth: minWidth,
+			maxWidth: maxWidth,
+			minHeight: minHeight,
+			maxHeight: maxHeight,
 			keepAspectRatio: keepAspectRatio,
 			tileOpacity: JsonTools.writeFloat(tileOpacity),
 			fillOpacity: JsonTools.writeFloat(fillOpacity),
@@ -227,7 +223,8 @@ class EntityDef {
 			showName: showName,
 			tilesetId: tilesetId,
 			tileRenderMode: JsonTools.writeEnum(tileRenderMode, false),
-			tileRect: tileRect,
+			tileRect: JsonTools.writeTileRect(tileRect),
+			uiTileRect: JsonTools.writeTileRect(uiTileRect),
 			nineSliceBorders: tileRenderMode==NineSlice ? nineSliceBorders.copy() : [],
 
 			maxCount: maxCount,

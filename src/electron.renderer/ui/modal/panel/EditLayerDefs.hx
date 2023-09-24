@@ -10,6 +10,8 @@ class EditLayerDefs extends ui.modal.Panel {
 	var jList : js.jquery.JQuery;
 	var jForm : js.jquery.JQuery;
 	public var cur : Null<data.def.LayerDef>;
+	var search : QuickSearch;
+	var intGridValuesIconsTdUid : Null<Int>;
 
 	public function new() {
 		super();
@@ -56,6 +58,10 @@ class EditLayerDefs extends ui.modal.Panel {
 
 		});
 
+		// Create quick search
+		search = new ui.QuickSearch( jContent.find(".mainList ul") );
+		search.jWrapper.appendTo( jContent.find(".search") );
+
 		select(editor.curLayerDef);
 	}
 
@@ -74,8 +80,8 @@ class EditLayerDefs extends ui.modal.Panel {
 		);
 		var oldUid = ld.uid;
 		project.defs.removeLayerDef(ld);
-		select(project.defs.layers[0]);
 		editor.ge.emit( LayerDefRemoved(oldUid) );
+		select(project.defs.layers[0]);
 	}
 
 
@@ -200,6 +206,10 @@ class EditLayerDefs extends ui.modal.Panel {
 			case LayerDefIntGridValuesSorted(defUid):
 				updateForm();
 
+			case LayerDefIntGridValueAdded(defUid,value):
+				updateForm();
+				jForm.find("ul.intGridValues li.value:last .name").focus();
+
 			case LayerDefIntGridValueRemoved(defUid,value,used):
 				updateForm();
 
@@ -209,6 +219,7 @@ class EditLayerDefs extends ui.modal.Panel {
 
 	function select(ld:Null<data.def.LayerDef>) {
 		cur = ld;
+		intGridValuesIconsTdUid = null;
 		updateForm();
 		updateList();
 	}
@@ -257,10 +268,49 @@ class EditLayerDefs extends ui.modal.Panel {
 		i.allowNull = true;
 		i.onChange = editor.ge.emit.bind( LayerDefChanged(cur.uid) );
 
+		// UI color
+		var jCol = jForm.find("#uiColor");
+		jCol.removeClass("null");
+		if( cur.uiColor!=null )
+			jCol.val(cur.uiColor.toHex());
+		else {
+			jCol.val("black");
+			jCol.addClass("null");
+		}
+		jCol.change(_->{
+			cur.uiColor = dn.Col.parseHex( jCol.val() );
+			editor.ge.emit( LayerDefChanged(cur.uid) );
+		});
+		jForm.find(".resetUiColor").click(_->{
+			cur.uiColor = null;
+			editor.ge.emit( LayerDefChanged(cur.uid) );
+		}).css("display", cur.uiColor==null ? "none" : "block");
+
 		// Grid
 		var i = Input.linkToHtmlInput( cur.gridSize, jForm.find("input[name='gridSize']") );
 		i.setBounds(1,Const.MAX_GRID_SIZE);
-		i.onChange = editor.ge.emit.bind(LayerDefChanged(cur.uid));
+		i.onBeforeSetter = (newGrid)->{
+			new LastChance(L.t._("Layer grid changed"), project);
+
+			for(w in project.worlds)
+			for(l in w.levels)
+			for(li in l.layerInstances) {
+				if( li.layerDefUid==cur.uid )
+					li.remapToGridSize(cur.gridSize, newGrid);
+
+				if( li.def.autoSourceLayerDefUid==cur.uid )
+					li.remapToGridSize(cur.gridSize, newGrid);
+			}
+		}
+		i.onChange = ()->{
+			editor.ge.emit( LayerDefChanged(cur.uid) );
+
+			for(ld in project.defs.layers)
+				if( ld.autoSourceLayerDefUid==cur.uid ) {
+					ld.gridSize = cur.gridSize;
+					editor.ge.emit( LayerDefChanged(ld.uid) );
+				}
+		}
 
 		var i = Input.linkToHtmlInput( cur.guideGridWid, jForm.find("input[name='guideGridWid']") );
 		i.setBounds(0,Const.MAX_GRID_SIZE);
@@ -289,6 +339,12 @@ class EditLayerDefs extends ui.modal.Panel {
 
 		var i = Input.linkToHtmlInput( cur.canSelectWhenInactive, jForm.find("input[name='canSelectWhenInactive']") );
 		i.onChange = editor.ge.emit.bind(LayerDefChanged(cur.uid));
+
+		var i = Input.linkToHtmlInput( cur.renderInWorldView, jForm.find("input[name='renderInWorldView']") );
+		i.onChange = ()->{
+			editor.worldRender.invalidateAll();
+			editor.ge.emit(LayerDefChanged(cur.uid));
+		}
 
 		var i = Input.linkToHtmlInput( cur.hideFieldsWhenInactive, jForm.find("input[name='hideFieldsWhenInactive']") );
 		i.onChange = editor.ge.emit.bind(LayerDefChanged(cur.uid));
@@ -384,130 +440,255 @@ class EditLayerDefs extends ui.modal.Panel {
 					editor.ge.emit( LayerDefChanged(cur.uid) );
 				}
 			);
-
-			// var jTileset = jForm.find("[name=autoTileset]");
-			// jTileset.empty();
-			// jTileset.removeClass("required");
-			// jTileset.removeClass("noValue");
-
-			// var opt = new J("<option/>");
-			// opt.appendTo(jTileset);
-			// opt.attr("value", -1);
-			// opt.text("-- Select a tileset --");
-
-			// for(td in project.defs.tilesets) {
-			// 	var opt = new J("<option/>");
-			// 	opt.appendTo(jTileset);
-			// 	opt.attr("value", td.uid);
-			// 	opt.text( td.identifier );
-			// }
-			// jTileset.change( function(ev) {
-				// var newTilesetUid = jTileset.val()=="-1" ? null : Std.parseInt( jTileset.val() );
-
-				// if( cur.autoRuleGroups.length!=0 )
-				// 	new LastChance(Lang.t._("Changed auto-layer tileset"), project);
-
-				// cur.tilesetDefUid = newTilesetUid;
-				// if( cur.tilesetDefUid!=null && editor.curLayerInstance.isEmpty() )
-				// 	cur.gridSize = project.defs.getTilesetDef(cur.tilesetDefUid).tileGridSize;
-
-				// // TODO cleanup rules with invalid tileIDs
-
-				// editor.ge.emit( LayerDefChanged(cur.uid) );
-			// });
-			// if( cur.tilesetDefUid!=null )
-			// 	jTileset.val( cur.tilesetDefUid );
-			// else
-			// 	jTileset.addClass("noValue");
 		}
 
 		switch cur.type {
 
 			case IntGrid:
-				var jValuesList = jForm.find("ul.intGridValues");
-				jValuesList.find("li.value").remove();
+				// Guess icons tileset UID
+				if( intGridValuesIconsTdUid==null )
+					for(v in cur.getAllIntGridValues())
+						if( v.tile!=null ) {
+							intGridValuesIconsTdUid = v.tile.tilesetUid;
+							break;
+						}
 
-				// Add intGrid value button
-				var jAddButton = jValuesList.find("li.add");
-				jAddButton.find("button").off().click( function(ev) {
-					var picker = new ui.modal.dialog.ColorPicker(Const.getNicePalette(), Const.suggestNiceColor(cur.getAllIntGridValues().map(iv->iv.color)));
-					picker.onValidate = (c)->{
-						cur.addIntGridValue(c);
-						editor.ge.emit(LayerDefChanged(cur.uid));
-						updateForm();
-					}
+				// Icons tileset
+				var jSelect = jForm.find(".valuesIconsTileset");
+				JsTools.createTilesetSelect(project, jSelect, intGridValuesIconsTdUid, true, "No icon", (tilesetDefUid)->{
+					for(iv in cur.getAllIntGridValues())
+						iv.tile = null;
+
+					intGridValuesIconsTdUid = tilesetDefUid==null || tilesetDefUid<0 ? null : tilesetDefUid;
+					updateForm();
 				});
 
-				// Existing values
-				for( intGridVal in cur.getAllIntGridValues() ) {
-					var e = jForm.find("xml#intGridValue").clone().children().wrapAll("<li/>").parent();
-					e.addClass("value");
-					e.insertBefore(jAddButton);
-					e.find(".id")
-						.html( Std.string(intGridVal.value) )
-						.css({
-							color: C.intToHex( C.toWhite(intGridVal.color,0.5) ),
-							borderColor: C.intToHex( C.toWhite(intGridVal.color,0.2) ),
-							backgroundColor: C.intToHex( C.toBlack(intGridVal.color,0.5) ),
+
+				var jIntGridValuesWrapper = jForm.find("dd.intGridValues");
+				var jAllGroups = jIntGridValuesWrapper.find("ul.intGridValuesGroups");
+				jAllGroups.empty();
+
+				// Add intGrid value button
+				jIntGridValuesWrapper.find(".addValue").off().click( _->{
+					var col = Const.suggestNiceColor( cur.getAllIntGridValues().map(iv->iv.color) );
+					var iv = cur.addIntGridValue(col);
+					editor.ge.emit( LayerDefIntGridValueAdded(cur.uid,iv) );
+				});
+
+				// Add intGrid group button
+				jIntGridValuesWrapper.find(".addGroup").off().click( _->{
+					cur.addIntGridGroup();
+					editor.ge.emit( LayerDefChanged(cur.uid) );
+				});
+
+				// Grouped intGrid values
+				var groupedValues = cur.getGroupedIntGridValues();
+				for(g in groupedValues) {
+					var jGroupWrapper = jForm.find("xml#intGridValuesGroup").clone().children().wrapAll("<li/>").parent();
+					jGroupWrapper.appendTo(jAllGroups);
+
+					if( g.color!=null )
+						jGroupWrapper.css('background-color', g.color.toCssRgba(0.7));
+
+					if( g.groupUid!=0 )
+						jGroupWrapper.addClass("draggable");
+
+					// Group header
+					var jGroupHeader = jGroupWrapper.find(".header");
+					if( groupedValues.length==1 )
+						jGroupHeader.hide();
+					var jIcon = jGroupHeader.find(".groupIcon");
+					var jName = jGroupHeader.find(".name");
+					switch g.groupUid {
+						case 0 :
+							jGroupWrapper.addClass("none");
+							jName.text(g.displayName);
+
+						case _ :
+							// Editable group name
+							jName.addClass("editable");
+							jName.text(g.displayName);
+							jName.click(_->{
+								var jInput = new J('<input type="text"/>');
+								jInput.insertAfter(jName);
+								jName.hide();
+								// jName.replaceWith(jInput);
+								jInput.focus();
+								if( g.groupInf.identifier==null )
+									jInput.attr("placeholder", g.displayName);
+
+								if( g.groupInf.identifier!=null )
+									jInput.val(g.groupInf.identifier);
+
+								var original = jInput.val();
+								jInput.blur(_->{
+									if( jInput.val()==original ) {
+										jName.show();
+										jInput.remove();
+										return;
+									}
+									var identifier = data.Project.cleanupIdentifier(jInput.val(), Free);
+									g.groupInf.identifier = identifier;
+									editor.ge.emit( LayerDefChanged(cur.uid) );
+								});
+
+								jInput.keydown((ev:js.jquery.Event)->{
+									switch ev.key {
+										case "Enter": jInput.blur();
+										case _:
+									}
+								});
+							});
+
+							var act : Array<ui.modal.ContextMenu.ContextAction> = [
+								{ // Delete group
+									label: L._Delete(L.t._("group")),
+									enable: ()->g.groupUid>0,
+									cb: ()->{
+										if( g.all.length>0 ) {
+											// Move all values back to "ungrouped"
+											new ui.modal.dialog.Confirm(
+												L.t._("Deleting this group will move all its values back to \"UNGROUPED\". Confirm?"),
+												true,
+												()->{
+													for(iv in g.all)
+														iv.groupUid = 0;
+													cur.removeIntGridGroup(g.groupUid);
+													editor.ge.emitAtTheEndOfFrame( LayerDefChanged(cur.uid) );
+												}
+											);
+										}
+										else {
+											// Empty group
+											cur.removeIntGridGroup(g.groupUid);
+											editor.ge.emit( LayerDefChanged(cur.uid) );
+										}
+									}
+								},
+								{ // Custom color
+									label: L.t._("Set group color"),
+									cb: ()->{
+										var cp = new ui.modal.dialog.ColorPicker( Const.getNicePalette(), g.color, true );
+										cp.onValidate = (c)->{
+											g.groupInf.color = c.toHex();
+											editor.ge.emit( LayerDefChanged(cur.uid) );
+										}
+									},
+								},
+								{ // Remove custom color
+									label: L.t._("Remove group color"),
+									show: ()->g.color!=null,
+									cb: ()->{
+										g.groupInf.color = null;
+										editor.ge.emit( LayerDefChanged(cur.uid) );
+									},
+								},
+							];
+							ContextMenu.addTo(jGroupHeader, act);
+					}
+
+					var jGroup = jGroupWrapper.find(".intGridValuesGroup");
+					jGroup.attr("groupUid", Std.string(g.groupUid));
+
+					// IntGrid values
+					for( intGridVal in g.all ) {
+						var jValue = jForm.find("xml#intGridValue").clone().children().wrapAll("<li/>").parent();
+						jValue.attr("valueId", Std.string(intGridVal.value));
+						jValue.addClass("value");
+						jValue.appendTo(jGroup);
+						jValue.find(".id")
+							.html( Std.string(intGridVal.value) )
+							.css({
+								color: C.intToHex( C.toWhite(intGridVal.color,0.5) ),
+								borderColor: C.intToHex( C.toWhite(intGridVal.color,0.2) ),
+								backgroundColor: C.intToHex( C.toBlack(intGridVal.color,0.5) ),
+							});
+
+						// Tile
+						var jTile = jValue.find(".tile");
+						if( intGridValuesIconsTdUid!=null )
+							jTile.append( JsTools.createTileRectPicker(intGridValuesIconsTdUid, intGridVal.tile, true, (r)->{
+								intGridVal.tile = r;
+								editor.ge.emit( LayerDefChanged(cur.uid) );
+							}));
+
+						// Edit value identifier
+						var i = new form.input.StringInput(
+							jValue.find("input.name"),
+							function() return intGridVal.identifier,
+							function(v) {
+								if( v!=null && StringTools.trim(v).length==0 )
+									v = null;
+								intGridVal.identifier = data.Project.cleanupIdentifier(v, Free);
+							}
+						);
+						i.validityCheck = cur.isIntGridValueIdentifierValid;
+						i.validityError = N.invalidIdentifier;
+						i.onChange = editor.ge.emit.bind(LayerDefChanged(cur.uid));
+						i.jInput.css({
+							backgroundColor: C.intToHex( C.toBlack(intGridVal.color,0.7) ),
 						});
 
-					// Edit value identifier
-					var i = new form.input.StringInput(
-						e.find("input.name"),
-						function() return intGridVal.identifier,
-						function(v) {
-							if( v!=null && StringTools.trim(v).length==0 )
-								v = null;
-							intGridVal.identifier = data.Project.cleanupIdentifier(v, Free);
-						}
-					);
-					i.validityCheck = cur.isIntGridValueIdentifierValid;
-					i.validityError = N.invalidIdentifier;
-					i.onChange = editor.ge.emit.bind(LayerDefChanged(cur.uid));
-					i.jInput.css({
-						backgroundColor: C.intToHex( C.toBlack(intGridVal.color,0.7) ),
-					});
+						// Edit color
+						var col = jValue.find("input[type=color]");
+						col.val( C.intToHex(intGridVal.color) );
+						col.change( function(ev) {
+							cur.getIntGridValueDef(intGridVal.value).color = C.hexToInt( col.val() );
+							editor.ge.emit(LayerDefChanged(cur.uid));
+							updateForm();
+						});
 
-					// Edit color
-					var col = e.find("input[type=color]");
-					col.val( C.intToHex(intGridVal.color) );
-					col.change( function(ev) {
-						cur.getIntGridValueDef(intGridVal.value).color = C.hexToInt( col.val() );
-						editor.ge.emit(LayerDefChanged(cur.uid));
-						updateForm();
-					});
+						// Remove
+						jValue.find("button.remove").click( function(ev:js.jquery.Event) {
+							var jThis = ev.getThis();
+							var isUsed = project.isIntGridValueUsed(cur, intGridVal.value);
+							function run() {
+								if( isUsed )
+									new LastChance(L.t._("IntGrid value removed"), project);
+								cur.removeIntGridValue(intGridVal.value);
+								project.tidy();
+								editor.ge.emit( LayerDefIntGridValueRemoved(cur.uid, intGridVal.value, isUsed) );
+							}
+							if( isUsed ) {
+								new ui.modal.dialog.Confirm(
+									jThis,
+									L.t._("This value is used in some levels: removing it will also remove the value from all these levels. Are you sure?"),
+									true,
+									run
+								);
+								return;
+							}
+							else
+								run();
+						});
+					}
 
-					// Remove
-					e.find("button.remove").click( function(ev:js.jquery.Event) {
-						var jThis = ev.getThis();
-						var isUsed = project.isIntGridValueUsed(cur, intGridVal.value);
-						function run() {
-							if( isUsed )
-								new LastChance(L.t._("IntGrid value removed"), project);
-							cur.removeIntGridValue(intGridVal.value);
-							project.tidy();
-							editor.ge.emit( LayerDefIntGridValueRemoved(cur.uid, intGridVal.value, isUsed) );
-						}
-						if( isUsed ) {
-							new ui.modal.dialog.Confirm(
-								jThis,
-								L.t._("This value is used in some levels: removing it will also remove the value from all these levels. Are you sure?"),
-								true,
-								run
-							);
-							return;
-						}
-						else
-							run();
+					// Make intGrid values sortable
+					JsTools.makeSortable(jGroup, "allIntGroups", (ev:sortablejs.Sortable.SortableDragEvent)->{
+						var fromGroupUid = Std.parseInt( ev.from.getAttribute("groupUid") );
+						var toGroupUid = Std.parseInt( ev.to.getAttribute("groupUid") );
+						var valueId = Std.parseInt( ev.item.getAttribute("valueId") );
+						var iv = cur.getIntGridValueDef(valueId);
+
+						if( iv.groupUid!=fromGroupUid )
+							return; // Prevent double "onSort" call (one for From, one for To)
+
+						var moved = cur.sortIntGridValueDef(valueId, fromGroupUid, toGroupUid, ev.oldIndex, ev.newIndex);
+						editor.ge.emit( LayerDefIntGridValuesSorted(cur.uid) );
 					});
 				}
 
 
-				// Make intGrid valueslist sortable
-				JsTools.makeSortable(jValuesList, function(ev) {
-					var moved = cur.sortIntGridValueDef(ev.oldIndex, ev.newIndex);
-					editor.ge.emit( LayerDefIntGridValuesSorted(cur.uid) );
-				});
+				// Make intGrid groups sortable
+				if( groupedValues.length>1 )
+					JsTools.makeSortable(
+						jAllGroups,
+						(ev:sortablejs.Sortable.SortableDragEvent)->{
+							var moved = cur.sortIntGridValueGroupDef(ev.oldIndex-1, ev.newIndex-1);
+							editor.ge.emit( LayerDefIntGridValuesSorted(cur.uid) );
+						},
+						{ onlyDraggables: true }
+					);
 
 				initAutoTilesetSelect();
 
@@ -593,6 +774,7 @@ class EditLayerDefs extends ui.modal.Panel {
 					jForm.find("select[name=tilesets]"),
 					cur.tilesetDefUid,
 					true,
+					"No auto-layer rendering",
 					(uid)->{
 						if( uid==null )
 							cur.tilesetDefUid = null;
@@ -667,20 +849,21 @@ class EditLayerDefs extends ui.modal.Panel {
 		]);
 
 		for(ld in project.defs.layers) {
-			var e = new J("<li/>");
-			jList.append(e);
+			var jLi = new J("<li/>");
+			jLi.appendTo(jList);
 
 			if( ld.hideInList )
-				e.addClass("hidden");
-			e.addClass( Std.string(ld.type) );
+				jLi.addClass("hidden");
+			jLi.addClass( Std.string(ld.type) );
 
-			e.append( JsTools.createLayerTypeIcon2(ld.type) );
+			jLi.append( JsTools.createLayerTypeIcon2(ld.type) );
+			JsTools.applyListCustomColor(jLi, ld.uiColor, cur==ld);
 
-			e.append('<span class="name">'+ld.identifier+'</span>');
+			jLi.append('<span class="name">'+ld.identifier+'</span>');
 			if( cur==ld )
-				e.addClass("active");
+				jLi.addClass("active");
 
-			ContextMenu.addTo(e, [
+			ContextMenu.addTo(jLi, [
 				{
 					label: L._Copy(),
 					cb: ()->{
@@ -719,15 +902,16 @@ class EditLayerDefs extends ui.modal.Panel {
 				}
 			]);
 
-			e.click( function(_) select(ld) );
+			jLi.click( _->select(ld) );
 		}
 
 		// Make layer list sortable
-		JsTools.makeSortable(jList, function(ev) {
+		JsTools.makeSortable(jList, (ev)->{
 			var moved = project.defs.sortLayerDef(ev.oldIndex, ev.newIndex);
 			select(moved);
 			editor.ge.emit(LayerDefSorted);
 		});
 		checkBackup();
+		search.run();
 	}
 }
