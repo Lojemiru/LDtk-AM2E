@@ -43,10 +43,18 @@ class Input<T> {
 			if( ev.key=="Enter" )
 				onEnterKey();
 		});
+		jInput.on("mousedown.input", function(ev:js.jquery.Event) {
+			if( ev.button==1 )
+				resetToDefault();
+		});
 	}
 
 	function onEnterKey() {
 		jInput.blur();
+	}
+
+	dynamic function resetToDefault() {
+		setter(null);
 	}
 
 	function checkGuide() {
@@ -114,17 +122,23 @@ class Input<T> {
 				jInput.removeClass(ac.className);
 	}
 
-	public function enableSlider(speed=1.0) {
+	public function enableSlider(speed=1.0, showIcon=true) {
 		if( getSlideDisplayValue(0)==null )
 			throw "Slider is not supported for this Input type";
 
 		jInput.addClass("slider");
+		if( !showIcon )
+			jInput.addClass("hideSliderIcon");
+
 		var startX = -1.;
 		var threshold = 3;
 
 		jInput
 			.off(".slider")
 			.on("mousedown.slider", function(ev:js.jquery.Event) {
+				if( ev.button!=0 )
+					return;
+
 				startX = ev.pageX;
 				ev.preventDefault();
 
@@ -132,6 +146,9 @@ class Input<T> {
 				App.ME.jDoc
 					.off(".slider")
 					.on("mousemove.slider", function(ev) {
+						if( ev.button!=0 )
+							return;
+
 						var delta = startX<0 ? 0 : ev.pageX-startX;
 						if( M.fabs(delta)>=threshold ) {
 							var v = getSlideDisplayValue( startVal + delta*0.008*speed );
@@ -141,6 +158,9 @@ class Input<T> {
 						}
 					})
 					.on("mouseup.slider", function(ev) {
+						if( ev.button!=0 )
+							return;
+
 						App.ME.jDoc.off(".slider");
 						jInput.removeClass("editing");
 
@@ -186,7 +206,7 @@ class Input<T> {
 			return;
 		}
 
-		onBeforeSetter();
+		onBeforeSetter(newValue);
 		setter(newValue);
 		writeValueToInput();
 		lastValidValue = getter();
@@ -201,7 +221,7 @@ class Input<T> {
 		linkedEvents.set(eid,true);
 	}
 
-	public dynamic function onBeforeSetter() {}
+	public dynamic function onBeforeSetter(v:T) {}
 	public dynamic function fixValue(v:T) : T { return v; }
 	public dynamic function onChange() {}
 	public dynamic function onValueChange(v:T) {}
@@ -211,11 +231,11 @@ class Input<T> {
 	}
 
 	function writeValueToInput() {
-		var v = getter();
-		if( v==null )
-			jInput.val("");
-		else
-			jInput.val( Std.string( getter() ) );
+		jInput.val( cleanInputString( getter() ) );
+	}
+
+	function cleanInputString(v:T) : String {
+		return v==null ? "" : Std.string(v);
 	}
 
 
@@ -280,27 +300,16 @@ class Input<T> {
 					i;
 				}
 
-			// case TEnum(eRef,params):
-			// 	var type = eRef.get();
-			// 	var fullPath = type.module.length==0 ? type.name : type.module+"."+type.name;
-			// 	var packExpr : Expr = {
-			// 		expr: EConst( CIdent(type.module) ),
-			// 		// expr: EConst( CIdent(type.pack.join(".")) ),
-			// 		pos: variable.pos,
-			// 	}
-			// 	var enumExpr : Expr = {
-			// 		expr: EField( packExpr, type.name ),
-			// 		pos: variable.pos,
-			// 	}
-
-			// 	return macro {
-			// 		new form.input.EnumSelect(
-			// 			$formInput,
-			// 			$enumExpr,
-			// 			function() return cast $variable,
-			// 			function(v) $variable = cast v
-			// 		);
-			// 	}
+			case TAbstract(_.toString()=>"Null", [ TAbstract(_.toString()=>"Int", params) ]) :
+				return macro {
+					var i = new form.input.IntInput(
+						$formInput,
+						function() return $variable,
+						function(v) $variable = v
+					);
+					i.allowNull = true;
+					i;
+				}
 
 
 			case TAbstract(t, params):

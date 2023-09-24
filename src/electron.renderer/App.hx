@@ -32,6 +32,8 @@ class App extends dn.Process {
 	var requestedCpuEndTime = 0.;
 	public var pendingUpdate : Null<{ ver:String, github:Bool }>;
 
+	public var keyBindings : Array<KeyBinding> = [];
+
 	public function new() {
 		super();
 
@@ -81,8 +83,8 @@ class App extends dn.Process {
 		IpcRenderer.on("settingsApplied", ()->updateBodyClasses());
 
 		var win = js.Browser.window;
-		win.onblur = onAppBlur;
-		win.onfocus = onAppFocus;
+		win.onblur = onWindowBlur;
+		win.onfocus = onWindowFocus;
 		win.onresize = onAppResize;
 		win.onmousemove = onAppMouseMove;
 		#if debug
@@ -178,6 +180,80 @@ class App extends dn.Process {
 		IpcRenderer.invoke("appReady");
 		updateBodyClasses();
 		LOG.flushOnAdd = false;
+		initKeyBindings();
+	}
+
+
+	function initKeyBindings() {
+		keyBindings = [];
+
+		// Parse AppCommands meta
+		var meta = haxe.rtti.Meta.getFields(AppCommand);
+		var keyNameReg = ~/(ctrl|shift|alt| |-|\+|\[wasd\]|\[zqsd\]|\[arrows\]|\[win\]|\[linux\]|\[mac\]|\[debug\])/gi;
+		for(k in AppCommand.getConstructors()) {
+			var cmd = AppCommand.createByName(k);
+			var cmdMeta : Dynamic = Reflect.field(meta, k);
+			var rawCombos : String = try cmdMeta.k[0] catch(_) null;
+			if( rawCombos==null )
+				continue;
+
+			rawCombos = rawCombos.toLowerCase();
+			for(rawCombo in rawCombos.split(",")) {
+
+				var rawKey = keyNameReg.replace(rawCombo, "");
+				var keyCode = switch rawKey {
+					case "escape": K.ESCAPE;
+					case "tab": K.TAB;
+					case "pagedown": K.PGDOWN;
+					case "pageup": K.PGUP;
+					case "up": K.UP;
+					case "down": K.DOWN;
+					case "left": K.LEFT;
+					case "right": K.RIGHT;
+					case "²": K.QWERTY_TILDE;
+					case "`": K.QWERTY_QUOTE;
+
+					case _:
+						var fnReg = ~/f([0-9]|1[0-2])$/gi;
+						if( rawKey.length==1 && rawKey>="a" && rawKey<="z" )
+							K.A + ( rawKey.charCodeAt(0) - "a".code )
+						else if( rawKey.length==1 && rawKey>="0" && rawKey<="9" )
+							K.NUMBER_0 + ( rawKey.charCodeAt(0) - "0".code )
+						else if( fnReg.match(rawKey) )
+							K.F1 + Std.parseInt( fnReg.matched(1) ) - 1;
+						else
+							throw "Unknown key "+rawKey;
+				}
+
+				var navKeys : Null<Settings.NavigationKeys> =
+					rawCombo.indexOf("[wasd]")>=0 ? Settings.NavigationKeys.Wasd
+					: rawCombo.indexOf("[zqsd]")>=0 ? Settings.NavigationKeys.Zqsd
+					: rawCombo.indexOf("[arrows]")>=0 ? Settings.NavigationKeys.Arrows
+					: null;
+
+
+				var os : Null<String> =
+					rawCombo.indexOf("[win]")>=0 ? "win"
+					: rawCombo.indexOf("[linux]")>=0 ? "linux"
+					: rawCombo.indexOf("[mac]")>=0 ? "mac"
+					: null;
+
+
+				keyBindings.push({
+					keyCode: keyCode,
+					jsKey: rawKey,
+					ctrl: rawCombo.indexOf("ctrl")>=0,
+					shift: rawCombo.indexOf("shift")>=0,
+					alt: rawCombo.indexOf("alt")>=0,
+					navKeys: navKeys,
+					os: os,
+					debug: rawCombo.indexOf("[debug]")>=0,
+					allowInInputs: Reflect.hasField(cmdMeta, "input"),
+					command: cmd,
+				});
+			}
+
+		}
 	}
 
 
@@ -520,7 +596,10 @@ class App extends dn.Process {
 		lastKnownMouse.pageY = e.pageY;
 	}
 
-	function onAppFocus(ev:js.html.Event) {
+	function onWindowFocus(ev:js.html.Event) {
+		if( ev.target!=js.Browser.window )
+			return;
+
 		focused = true;
 		jsKeyDowns = new Map();
 		heapsKeyDowns = new Map();
@@ -531,7 +610,10 @@ class App extends dn.Process {
 		clipboard.readSystemClipboard();
 	}
 
-	function onAppBlur(ev:js.html.Event) {
+	function onWindowBlur(ev:js.html.Event) {
+		if( !focused || ev.target!=js.Browser.window )
+			return;
+
 		focused = false;
 		overCanvas = false;
 		jsKeyDowns = new Map();
@@ -546,7 +628,6 @@ class App extends dn.Process {
 		if( hasPage() )
 			curPageProcess.onAppResize();
 	}
-
 
 
 	public inline function requestCpu(full=true) {
@@ -647,11 +728,6 @@ class App extends dn.Process {
 	}
 
 	public function registerRecentProject(path:String) {
-		// #if !debug
-		// if( isInAppDir(path,true) )
-		// 	return false;
-		// #end
-
 		// No backup files
 		if( ui.ProjectSaver.extractBackupInfosFromFileName(path) != null )
 			return false;
@@ -680,6 +756,42 @@ class App extends dn.Process {
 		settings.save();
 	}
 
+
+	public function hasForcedDirColor(dir:String) {
+		for(dc in settings.v.recentDirColors)
+			if( dc.path==dir )
+				return true;
+		return false;
+	}
+
+	public function getRecentDirColor(dir:String) : dn.Col {
+		for(dc in settings.v.recentDirColors)
+			if( dc.path==dir )
+				return dn.Col.parseHex(dc.col);
+
+		var csum = 0;
+		for(c in dir.split(""))
+			csum+=c.charCodeAt(0);
+		var pal = Const.getNicePalette().filter( c->c.fastLuminance>=0.4 );
+		var col = pal[csum%pal.length];
+		return col;
+	}
+
+
+	public function forceDirColor(dir:String, ?c:dn.Col) {
+		var i = 0;
+		while( i < settings.v.recentDirColors.length )
+			if( settings.v.recentDirColors[i].path==dir )
+				settings.v.recentDirColors.splice(i,1);
+			else
+				i++;
+		if( c!=null ) {
+			settings.v.recentDirColors.push({ path: dir, col:c.toHex() });
+			settings.save();
+		}
+	}
+
+
 	public function clearRecentProjects() {
 		settings.v.recentProjects = [];
 		settings.save();
@@ -701,18 +813,18 @@ class App extends dn.Process {
 		}
 	}
 
-	public function loadProject(filePath:String, ?levelIndex:Int, ?onComplete:Bool->Void) : Void {
+	public function loadProject(filePath:String, ?levelIndex:Int, ?onComplete:(p:Null<data.Project>)->Void) : Void {
 		new ui.ProjectLoader(
 			filePath,
 			(p)->{
 				if( onComplete!=null )
-					onComplete(true);
+					onComplete(p);
 				loadPage( ()->new page.Editor(p, levelIndex), true );
 			},
 			(err)->{
 				// Failed
 				if( onComplete!=null )
-					onComplete(false);
+					onComplete(null);
 				LOG.error("Failed to load project: "+filePath+" levelIdx="+levelIndex);
 				if( err==ProjectNotFound )
 					unregisterRecentProject(filePath);
@@ -805,14 +917,14 @@ class App extends dn.Process {
 		// FPS limit while app isn't focused
 		if( haxe.Timer.stamp()<=requestedCpuEndTime ) // Has recent request
 			hxd.System.fpsLimit = -1;
-		else if( !focused && !ui.modal.Progress.hasAny() && !ui.modal.MetaProgress.exists() ) // App is blurred
-			hxd.System.fpsLimit = 2;
 		else if( ui.modal.Progress.hasAny() || ui.modal.MetaProgress.exists() ) // progress is running
 			hxd.System.fpsLimit = -1;
+		else if( !focused ) // App is blurred
+			hxd.System.fpsLimit = 2;
 		else if( haxe.Timer.stamp()>requestedCpuEndTime+4 ) // last request is long time ago (idling?)
-			hxd.System.fpsLimit = 10;
+			hxd.System.fpsLimit = Std.int(Const.FPS*0.2);
 		else
-			hxd.System.fpsLimit = 30;
+			hxd.System.fpsLimit = Std.int(Const.FPS*0.5);
 
 
 		// Process profiling
@@ -829,6 +941,7 @@ class App extends dn.Process {
 			debug("-- Misc ----------------------------------------");
 			debugPre('Electron: ${Const.getElectronVersion()}');
 			debugPre('FPS=${hxd.System.fpsLimit<=0 ? "100":Std.string(M.round(100*hxd.System.fpsLimit/60))}%');
+			debugPre('ElectronThrottling=${dn.js.ElectronTools.isThrottlingEnabled()}');
 			debugPre("electronZoom="+M.pretty(ET.getZoom(),2));
 			if( Editor.ME!=null ) {
 				debugPre("mouse="+Editor.ME.getMouse());

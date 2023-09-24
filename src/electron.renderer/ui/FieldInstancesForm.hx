@@ -79,7 +79,6 @@ class FieldInstancesForm {
 					jRep.append('<span class="label">Default</span>');
 
 				jRep.on("click.def", function(ev) {
-					trace("click def");
 					ev.preventDefault();
 					jRep.remove();
 					if( jElements.is("[type=checkbox]") ) {
@@ -338,10 +337,11 @@ class FieldInstancesForm {
 				}
 
 
-			case F_Enum(name):
-				var ed = Editor.ME.project.defs.getEnumDef(name);
-				var jSelect = new J("<select/>");
+			case F_Enum(defUid):
+				var ed = Editor.ME.project.defs.getEnumDef(defUid);
+				var jSelect = new J('<select class="advanced" id="fieldInstance_${defUid}"/>');
 				jSelect.appendTo(jTarget);
+				jSelect.attr("tdUid", ed.iconTilesetUid);
 
 				// Null value
 				if( fi.def.canBeNull || fi.getEnumValue(arrayIdx)==null ) {
@@ -368,7 +368,10 @@ class FieldInstancesForm {
 					var jOpt = new J('<option/>');
 					jOpt.appendTo(jSelect);
 					jOpt.attr("value","_default");
+					jOpt.addClass("default");
 					jOpt.text(v.id+" (default)");
+					if( v.tileRect!=null )
+						jOpt.attr("tile", haxe.Json.stringify(v.tileRect));
 					jOpt.css({
 						color: C.intToHex( C.toWhite(v.color,0.7) ),
 						backgroundColor: C.intToHex( C.toBlack(v.color,0.5) ),
@@ -381,6 +384,9 @@ class FieldInstancesForm {
 					var jOpt = new J('<option/>');
 					jOpt.appendTo(jSelect);
 					jOpt.attr("value",v.id);
+					jOpt.attr("color", C.intToHex(v.color));
+					if( v.tileRect!=null )
+						jOpt.attr("tile", haxe.Json.stringify(v.tileRect));
 					jOpt.text(v.id);
 					jOpt.css({
 						color: C.intToHex( C.toWhite(v.color,0.7) ),
@@ -406,17 +412,21 @@ class FieldInstancesForm {
 				hideInputIfDefault(arrayIdx, jSelect, fi);
 
 			case F_Bool:
-				var input = new J("<input/>");
-				input.attr("id",domId);
-				input.appendTo(jTarget);
-				input.attr("type","checkbox");
-				input.prop("checked",fi.getBool(arrayIdx));
-				input.change( function(ev) {
-					fi.parseValue( arrayIdx, Std.string( input.prop("checked") ) );
-					onFieldChange(fi);
-				});
+				var jCheck = new J("<input/>");
+				jCheck.attr("type","checkbox");
+				jCheck.attr("id",domId);
+				jCheck.appendTo(jTarget);
 
-				hideInputIfDefault(arrayIdx, input, fi);
+				var b = new form.input.BoolInput(
+					jCheck,
+					()->fi.getBool(arrayIdx),
+					(v)->{
+						fi.parseValue( arrayIdx, Std.string(v) );
+						onFieldChange(fi);
+					}
+				);
+
+				hideInputIfDefault(arrayIdx, jCheck, fi);
 
 			case F_Path:
 				var isRequired = fi.valueIsNull(arrayIdx) && !fi.def.canBeNull;
@@ -537,7 +547,7 @@ class FieldInstancesForm {
 
 					jRef.mouseenter( _->{
 						// Mouse over a ref
-						if( fi.valueIsNull(arrayIdx) )
+						if( fi.valueIsNull(arrayIdx) || ui.ValuePicker.exists() )
 							return;
 
 						if( tei==null )
@@ -551,7 +561,8 @@ class FieldInstancesForm {
 						}
 					});
 					jRef.mouseleave( _->{
-						editor.levelRender.clearTemp();
+						if( !ui.ValuePicker.exists() )
+							editor.levelRender.clearTemp();
 					});
 
 
@@ -673,7 +684,7 @@ class FieldInstancesForm {
 		// Connect to last point of existing path
 		if( fi.def.isArray )
 			switch fi.def.editorDisplayMode {
-				case Hidden, ValueOnly, NameAndValue, EntityTile, RadiusPx, RadiusGrid, ArrayCountNoLabel, ArrayCountWithLabel:
+				case Hidden, ValueOnly, NameAndValue, LevelTile, EntityTile, RadiusPx, RadiusGrid, ArrayCountNoLabel, ArrayCountWithLabel:
 				case Points, PointStar:
 				case RefLinkBetweenCenters:
 				case RefLinkBetweenPivots:
@@ -694,7 +705,7 @@ class FieldInstancesForm {
 
 				// Connect to previous point in path mode
 				switch fi.def.editorDisplayMode {
-					case Hidden, ValueOnly, NameAndValue, EntityTile, RadiusPx, RadiusGrid, ArrayCountNoLabel, ArrayCountWithLabel:
+					case Hidden, ValueOnly, NameAndValue, LevelTile, EntityTile, RadiusPx, RadiusGrid, ArrayCountNoLabel, ArrayCountWithLabel:
 					case Points, PointStar:
 					case RefLinkBetweenPivots:
 					case RefLinkBetweenCenters:
@@ -796,6 +807,24 @@ class FieldInstancesForm {
 
 			var jDt = new J("<dt/>");
 			jDt.appendTo(jWrapper);
+
+			// Context menu
+			var actions : Array<ui.modal.ContextMenu.ContextAction> = [
+				{
+					label: L.t._("Edit field definition"),
+					cb: ()->{
+						switch relatedInstance {
+							case Entity(ei):
+								var p = new ui.modal.panel.EditEntityDefs(ei.def);
+								p.fieldsForm.selectField(fd);
+							case Level(l):
+								var p = new ui.modal.panel.EditLevelFieldDefs();
+								p.selectField(fd);
+						}
+					},
+				}
+			];
+			ui.modal.ContextMenu.addTo(jDt, false, actions);
 
 			var jDd = new J("<dd/>");
 			jDd.attr("defUid", fd.uid);

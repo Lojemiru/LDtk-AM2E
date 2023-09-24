@@ -16,7 +16,7 @@ class Panel extends ui.Modal {
 		var mainPanel = new J("#mainPanel");
 
 		jModalAndMask.addClass("panel");
-		jModalAndMask.removeClass("centered");
+		anchor = MA_Free;
 
 		jCloseButton = new J('<button class="close gray"> <div class="icon close"/> </button>');
 		jCloseButton.click( ev->if( !isClosing() ) close() );
@@ -65,9 +65,10 @@ class Panel extends ui.Modal {
 	override function onResize() {
 		super.onResize();
 		var jBar = editor.jMainPanel.find("#mainBar");
-		var y = jBar.offset().top + jBar.outerHeight() - 6;
+		var y = settings.v.zenMode ? 0 : jBar.offset().top + jBar.outerHeight() - 6;
 		jWrapper.css({
 			top: y+"px",
+			left: "0px",
 			height: 'calc( 100vh - ${y}px )',
 		});
 	}

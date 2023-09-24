@@ -7,6 +7,7 @@
 	<div class="buttons">
 		<button class="create"> <span class="icon add"></span> </button>
 	</div>
+	<div class="search"></div>
 	<ul class="niceList"></ul>
 </div>
 
@@ -41,6 +42,16 @@
 	</dt>
 	<dd>
 		<input type="text" name="layerDoc" id="layerDoc"/>
+	</dd>
+
+
+	<dt>
+		<label for="uiColor">Interface color</label>
+		<info>This color will be used in all lists where the layer appears.</info>
+	</dt>
+	<dd>
+		<input type="color" name="uiColor" id="uiColor"/>
+		<button class="transparent resetUiColor small"> <span class="icon reset"></span> </button>
 	</dd>
 
 
@@ -157,6 +168,16 @@
 		<input type="checkbox" name="canSelectWhenInactive" class="small" id="canSelectWhenInactive"/>
 	</dd>
 
+	<dt class="IntGrid AutoLayer Tiles">
+		<label for="renderInWorldView">Show in world view</label>
+		<info>
+			If enabled, the content of this layer will be used when rendering levels in a simplified way for the world view.
+		</info>
+	</dt>
+	<dd class="IntGrid AutoLayer Tiles">
+		<input type="checkbox" name="renderInWorldView" class="small" id="renderInWorldView"/>
+	</dd>
+
 
 	<dt class="Entities">
 		<label for="hideFieldsWhenInactive">Hide entity fields when inactive</label>
@@ -171,21 +192,39 @@
 
 
 	<dt class="IntGrid">
+		<label>Values interface icons</label>
+		<info>You may associate custom interface icons to each value. These icons are only used for the UI, not for actual rendering. To render values as tiles in your level, use Auto-Layer below.</info>
+	</dt>
+	<dd class="IntGrid">
+		<select class="valuesIconsTileset"></select>
+	</dd>
+
+
+	<dt class="IntGrid">
 		<label>Grid values</label>
 		<info>The list of all Integer values that could be painted in this IntGrid layer.</info>
 	</dt>
-	<dd class="IntGrid">
-		<ul class="intGridValues">
-			<li class="add">
-				<button type="button" class="gray">+</button>
-			</li>
-		</ul>
+	<dd class="IntGrid intGridValues">
+		<div class="buttons">
+			<button class="gray addValue" title="Create an IntGrid value"> <span class="icon add"></span> </button>
+			<button class="gray addGroup" title="Create a group of IntGrid values"> <span class="icon folder"></span> </button>
+		</div>
+		<ul class="intGridValuesGroups"></ul>
+
+		<xml id="intGridValuesGroup">
+			<div class="header">
+				<span class="icon folderClose groupIcon"></span>
+				<span class="name"></span>
+			</div>
+			<ul class="intGridValuesGroup"></ul>
+		</xml>
 
 		<xml id="intGridValue">
 			<div class="sortHandle"></div>
 			<span class="id">?</span>
-			<input type="text" class="name" placeholder="Optional value identifier"/>
 			<input type="color" value="#ffffff"/>
+			<span class="tile"></span>
+			<input type="text" class="name" placeholder="Optional value identifier"/>
 			<button class="red remove"><span class="icon delete"></span></button>
 		</xml>
 	</dd>

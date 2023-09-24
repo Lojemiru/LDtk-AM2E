@@ -1,6 +1,6 @@
 
 enum GlobalEvent {
-	ViewportChanged;
+	ViewportChanged(zoomChanged:Bool);
 	AppSettingsChanged;
 	LastChanceEnded;
 
@@ -19,12 +19,15 @@ enum GlobalEvent {
 
 	WorldLevelMoved(level:data.Level, isFinal:Bool, prevNeighbourIids:Null<Array<String>>);
 	WorldSettingsChanged;
+	WorldCreated(w:data.World);
+	WorldRemoved(w:data.World);
 
 	LayerDefAdded;
 	LayerDefRemoved(defUid:Int);
 	LayerDefChanged(defUid:Int);
 	LayerDefSorted;
 	LayerDefConverted;
+	LayerDefIntGridValueAdded(defUid:Int, valueId:Int);
 	LayerDefIntGridValuesSorted(defUid:Int);
 	LayerDefIntGridValueRemoved(defUid:Int, valueId:Int, isUsed:Bool);
 
@@ -138,9 +141,11 @@ enum RectHandlePos {
 
 typedef ParsedExternalEnumData = {
 	var color: Null<Int>;
+	var tileRect: Null<ldtk.Json.TilesetRect>;
 }
 typedef ParsedExternalEnum = {
 	var enumId : String;
+	var tilesetUid : Null<Int>;
 	var values : Array<{
 		var valueId: String;
 		var data : ParsedExternalEnumData;
@@ -155,6 +160,7 @@ enum EnumSyncChange {
 
 typedef EnumSyncDiff = {
 	var enumId: String;
+	var newTilesetUid: Null<Int>;
 	var ?warning: Bool;
 	var change: Null<EnumSyncChange>;
 	var valueDiffs: Map<String, EnumValueSyncDiff>;
@@ -217,4 +223,70 @@ enum ClipboardType {
 typedef CachedIID = {
 	var level: data.Level;
 	var ?ei: data.inst.EntityInstance ;
+}
+
+
+enum ModalAnchor {
+	MA_Free;
+	MA_Centered;
+	MA_JQuery(je:js.jquery.JQuery);
+	MA_Coords(m:Coords);
+}
+
+
+typedef KeyBinding = {
+	var keyCode : Int;
+	var jsKey : String;
+	var ctrl : Bool;
+	var shift : Bool;
+	var alt : Bool;
+
+	var navKeys : Null<Settings.NavigationKeys>;
+	var os : Null<String>;
+	var debug: Bool;
+
+	var allowInInputs : Bool;
+
+	var command : AppCommand;
+}
+
+enum AppCommand {
+	@k("ctrl s") @input C_SaveProject;
+	@k("ctrl shift s") @input C_SaveProjectAs;
+	@k("ctrl W") @input C_CloseProject;
+	C_RenameProject;
+
+	@k("escape") @input C_Back;
+	@k("f12") @input C_AppSettings;
+	@k("ctrl z") C_Undo;
+	@k("ctrl y") C_Redo;
+	@k("ctrl a") C_SelectAll;
+	@k("tab") C_ZenMode;
+	@k("h") C_ShowHelp;
+	@k("shift w, ², `, [zqsd] w, [arrows] w") C_ToggleWorldMode;
+	@k("ctrl r, [debug] ctrl shift r") @input C_RunCommand;
+	@k("ctrl q") @input C_ExitApp;
+	@k("pagedown") C_GotoPreviousWorldLayer;
+	@k("pageup") C_GotoNextWorldLayer;
+	@k("ctrl pagedown, shift pagedown") C_MoveLevelToPreviousWorldLayer;
+	@k("ctrl pageup, shift pageup") C_MoveLevelToNextWorldLayer;
+
+	@k("p") C_OpenProjectPanel;
+	@k("l") C_OpenLayerPanel;
+	@k("e") C_OpenEntityPanel;
+	@k("u") C_OpenEnumPanel;
+	@k("t") C_OpenTilesetPanel;
+	@k("c") C_OpenLevelPanel;
+
+	@k("[zqsd] z, [wasd] w, [arrows] up") C_NavUp;
+	@k("[zqsd] s, [wasd] s, [arrows] down") C_NavDown;
+	@k("[zqsd] q, [wasd] a, [arrows] left") C_NavLeft;
+	@k("[zqsd] d, [wasd] d, [arrows] right") C_NavRight;
+
+	@k("shift r") C_ToggleAutoLayerRender;
+	@k("shift e") C_ToggleSelectEmptySpaces;
+	@k("shift t") C_ToggleTileStacking;
+	@k("shift a, [zqsd] a, [arrows] a") C_ToggleSingleLayerMode;
+	@k("[win] ctrl h, [linux] ctrl h, [mac] shift h") C_ToggleDetails;
+	@k("g") C_ToggleGrid;
 }
