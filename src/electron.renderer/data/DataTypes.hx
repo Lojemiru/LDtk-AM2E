@@ -7,12 +7,10 @@ package data;
 		- do not rename Typedef fields or change their type
 */
 
-typedef IntGridValueDefEditor = {
+typedef IntGridValueDef = {
 	var value : Int;
 	var identifier : Null<String>;
-	var color : dn.Col;
-	var tile : Null<ldtk.Json.TilesetRect>;
-	var groupUid : Int;
+	var color : UInt;
 }
 
 enum ValueWrapper {
@@ -34,15 +32,13 @@ enum TileEditMode {
 
 typedef EnumDefValue = {
 	var id : String;
-	var tileRect : Null<ldtk.Json.TilesetRect>;
+	var tileId : Null<Int>;
 	var color: Int;
 }
 
 typedef AutoLayerRuleGroup = {
 	var uid : Int;
 	var name : String;
-	var color: Null<dn.Col>;
-	var icon: Null<ldtk.Json.TilesetRect>;
 	var active : Bool;
 	var collapsed : Bool;
 	var rules : Array<data.def.AutoLayerRuleDef>;

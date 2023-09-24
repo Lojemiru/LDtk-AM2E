@@ -17,32 +17,11 @@ class RuleEditor extends ui.modal.Dialog {
 		this.rule = rule;
 		sourceDef = layerDef.type==IntGrid ? layerDef : project.defs.getLayerDef( layerDef.autoSourceLayerDefUid );
 
-		// Smart pick current IntGrid value
 		curValue = -1;
-		var counts = new Map();
-		var best = -1;
-		for(cy in 0...rule.size)
-		for(cx in 0...rule.size) {
-			var v = M.iabs( rule.get(cx,cy) );
-			if( v==0 || v==Const.AUTO_LAYER_ANYTHING )
-				continue;
-
-			if( !counts.exists(v) )
-				counts.set(v,1);
-			else
-				counts.set(v,counts.get(v)+1);
-
-			if( best<0 || counts.get(best)<counts.get(v) )
-				best = v;
+		for(iv in layerDef.getAllIntGridValues()) {
+			curValue = iv.value;
+			break;
 		}
-		curValue = best;
-
-		// Default current value
-		if( curValue<0 )
-			for(iv in sourceDef.getAllIntGridValues()) {
-				curValue = iv.value;
-				break;
-			}
 		if( curValue==-1 )
 			curValue = Const.AUTO_LAYER_ANYTHING;
 
@@ -74,7 +53,7 @@ class RuleEditor extends ui.modal.Dialog {
 				rg.rules.remove(rule);
 			editor.ge.emit( LayerRuleRemoved(rule) );
 		}
-		else if( rule.tidy(layerDef) )
+		else if( rule.tidy() )
 			editor.ge.emit( LayerRuleChanged(rule) );
 	}
 
@@ -107,7 +86,6 @@ class RuleEditor extends ui.modal.Dialog {
 			Editor.ME.curLayerInstance.getTilesetUid(),
 			rule.tileMode==Single?Free:RectOnly,
 			rule.tileIds,
-			false,
 			function(tids) {
 				rule.tileIds = tids.copy();
 				editor.ge.emit( LayerRuleChanged(rule) );
@@ -133,110 +111,50 @@ class RuleEditor extends ui.modal.Dialog {
 
 
 
-	function updateValuePalette() {
-		var jValuePalette = jContent.find(">.pattern .valuePalette>ul").empty();
+	function updateValuePicker() {
+		var jValues = jContent.find(">.pattern .values ul").empty();
 
-		// Values view mode
-		var stateId = settings.makeStateId(RuleValuesColumns, layerDef.uid);
-		var columns = settings.getUiStateInt(stateId, project, 1);
-		JsTools.removeClassReg(jValuePalette, ~/col-[0-9]+/g);
-		jValuePalette.addClass("col-"+columns);
+		var allValues = sourceDef.getAllIntGridValues();
+		if( allValues.length>8 )
+			jContent.addClass("manyValues");
+		else
+			jContent.removeClass("manyValues");
 
-		// View select
-		var jMode = jContent.find(".displayMode");
-		jMode.off().click(_->{
-			var m = new ContextMenu(jMode);
-			m.add({
-				label:L.t._("List"),
-				icon: "listView",
-				cb: ()->{
-					settings.deleteUiState(stateId, project);
-					updateValuePalette();
-				}
+		// Values picker
+		for(v in allValues) {
+			var jVal = new J('<li/>');
+			jVal.appendTo(jValues);
+
+			jVal.css("background-color", C.intToHex(v.color));
+			jVal.append('<span class="value">${v.value}</span>');
+			jVal.append('<span class="name">${v.identifier!=null ? v.identifier : ""}</span>');
+			jVal.find(".name").css("color", C.intToHex( C.autoContrast(v.color) ) );
+
+			if( v.value==curValue )
+				jVal.addClass("active");
+
+			var id = v.value;
+			jVal.click( function(ev) {
+				curValue = id;
+				editor.ge.emit( LayerRuleChanged(rule) );
+				updateValuePicker();
 			});
-			for(n in [2,3,4,5]) {
-				m.add({
-					label:L.t._("::n:: columns", {n:n}),
-					icon: "gridView",
-					cb: ()->{
-						settings.setUiStateInt(stateId, n, project);
-						updateValuePalette();
-					}
-				});
-			}
-		});
-
-		// Groups
-		for(g in sourceDef.getGroupedIntGridValues()) {
-			var groupValue = (g.groupUid+1)*1000;
-
-			var jHeader = new J('<li class="title"/>');
-			jHeader.append('<span class="icon folderClose"/>');
-			if( sourceDef.hasIntGridGroups() ) {
-				jHeader.appendTo(jValuePalette);
-				jHeader.append('<span class="name">${g.displayName}</span>');
-
-				jHeader.click(_->{
-					curValue = groupValue;
-					updateValuePalette();
-				});
-			}
-
-			var jSubList = new J('<li class="subList"> <ul class="groupValues"></ul> </li>');
-			jSubList.appendTo(jValuePalette);
-
-			if( g.color!=null ) {
-				var alpha = curValue==groupValue ? 1 : 0.4;
-				jHeader.css("background-color", g.color.toCssRgba(0.8*alpha));
-				jSubList.css("background-color", g.color.toCssRgba(0.5*alpha));
-			}
-
-			if( curValue==groupValue )
-				jHeader.add(jSubList).addClass("active");
-
-			// Individual values
-			jSubList = jSubList.find("ul");
-			for(v in g.all) {
-				var jVal = new J('<li class="value"/>');
-				jVal.appendTo(jSubList);
-				jVal.css("background-color", C.intToHex(v.color));
-				jVal.append( JsTools.createIntGridValue(project, v, false) );
-				jVal.append('<span class="name">${v.identifier!=null ? v.identifier : Std.string(v.value)}</span>');
-				jVal.find(".name").css("color", C.intToHex( C.autoContrast(v.color) ) );
-
-				if( curValue==v.value )
-					jVal.addClass("active");
-
-				var id = v.value;
-				jVal.click( function(ev) {
-					curValue = id;
-					updateValuePalette();
-				});
-			}
 		}
 
 		// "Anything" value
 		var jVal = new J('<li/>');
-		jVal.appendTo(jValuePalette);
+		jVal.appendTo(jValues);
 		jVal.addClass("any");
 		jVal.append('<span class="value"></span>');
-		var label = '"Any value" / "No value"';
-		jVal.append('<span class="name">$label</span>');
+		jVal.append('<span class="name">Anything/Nothing</span>');
 		if( curValue==Const.AUTO_LAYER_ANYTHING )
 			jVal.addClass("active");
 		jVal.click( function(ev) {
 			curValue = Const.AUTO_LAYER_ANYTHING;
 			editor.ge.emit( LayerRuleChanged(rule) );
-			updateValuePalette();
+			updateValuePicker();
 		});
 
-
-		// Value groups
-		// var jGroups = jContent.find(">.pattern .groups ul").empty();
-		// // JsTools.removeClassReg(jGroups, ~/col-[0-9]+/g);
-		// // jGroups.addClass("col-"+columns);
-		// for(g in sourceDef.getGroupedIntGridValues())
-		// 	jGroups.append('<li>${g.displayName}</li>');
 	}
 
 	function renderAll() {
@@ -279,6 +197,8 @@ class RuleEditor extends ui.modal.Dialog {
 		var sizes = [ while( s<Const.MAX_AUTO_PATTERN_SIZE ) s+=2 ];
 		for(size in sizes) {
 			var jOpt = new J('<option value="$size">${size}x$size</option>');
+			// if( size>=7 )
+			// 	jOpt.append(" (WARNING: might slow-down app)");
 			jOpt.appendTo(jSizes);
 		}
 		jSizes.change( function(_) {
@@ -298,7 +218,7 @@ class RuleEditor extends ui.modal.Dialog {
 		});
 
 		// Finalize
-		updateValuePalette();
+		updateValuePicker();
 		if( guidedMode )
 			enableGuidedMode();
 

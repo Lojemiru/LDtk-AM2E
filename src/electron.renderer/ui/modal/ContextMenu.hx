@@ -5,13 +5,11 @@ import dn.data.GetText.LocaleString;
 typedef ContextActions = Array<ContextAction>;
 typedef ContextAction = {
 	var label : LocaleString;
-	var ?icon : String;
 	var ?sub : Null<LocaleString>;
 	var ?className : String;
 	var cb : Void->Void;
 	var ?show : Void->Bool;
 	var ?enable : Void->Bool;
-	var ?separatorBefore: Bool;
 	var ?separatorAfter: Bool;
 }
 
@@ -34,24 +32,20 @@ class ContextMenu extends ui.Modal {
 			jAttachTarget.addClass("contextMenuOpen");
 
 			if( jEventTarget.is("button") || jEventTarget.parent().is("button") || jNear!=null )
-				placer = ()->setAnchor( MA_JQuery(jEventTarget) );
+				placer = ()->positionNear(jEventTarget);
 			else if( openEvent!=null )
-				placer = ()->setAnchor( MA_Coords(new Coords(openEvent.pageX, openEvent.pageY)) );
+				placer = ()->positionNear( new Coords(openEvent.pageX, openEvent.pageY) );
 
 		}
 		else {
 			jAttachTarget = new J("");
 			if( m!=null )
-				placer = ()->setAnchor( MA_Coords(m) );
+				placer = ()->positionNear(m);
 		}
 
 		setTransparentMask();
 		addClass("contextMenu");
 		placer();
-	}
-
-	public function enableNoWrap() {
-		jContent.addClass("noWrap");
 	}
 
 	dynamic function placer() {}
@@ -135,11 +129,7 @@ class ContextMenu extends ui.Modal {
 		if( a.show!=null && !a.show() )
 			return jButton;
 		jButton.appendTo(jContent);
-		if( a.icon!=null )
-			jButton.prepend('<span class="icon ${a.icon}"></span> ${a.label}');
-		else
-			jButton.html(a.label);
-
+		jButton.html(a.label);
 		if( a.sub!=null && a.sub!=a.label )
 			jButton.append('<span class="sub">${a.sub}</span>');
 
@@ -153,9 +143,6 @@ class ContextMenu extends ui.Modal {
 			close();
 			a.cb();
 		});
-
-		if( a.separatorBefore )
-			jButton.addClass("separatorBefore");
 
 		if( a.separatorAfter )
 			jButton.addClass("separatorAfter");

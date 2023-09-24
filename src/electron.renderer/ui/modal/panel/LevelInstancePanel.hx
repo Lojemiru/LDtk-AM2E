@@ -10,7 +10,8 @@ class LevelInstancePanel extends ui.modal.Panel {
 		linkToButton("button.editLevelInstance");
 
 		// Level instance form
-		levelForm = new ui.LevelInstanceForm(jContent.find("#levelInstanceForm"), false);
+		levelForm = new ui.LevelInstanceForm();
+		jContent.find("#levelInstanceForm").replaceWith(levelForm.jWrapper);
 
 		checkBackup();
 	}

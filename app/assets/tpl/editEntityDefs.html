@@ -7,7 +7,6 @@
 		<button class="presets small" title="Create an entity using a preset.">Presets</button>
 		<!-- <button class="delete">🗑️</button> -->
 	</div>
-	<div class="search"></div>
 	<ul class="niceList"></ul>
 </div>
 
@@ -66,40 +65,45 @@
 
 			<dt>
 				<label for="width">Size</label>
-				<div class="info">Default width and height (in pixels) of this entity.</div>
+				<div class="info">Minimal width and height in pixels of this entity.</div>
 			</dt>
 			<dd>
 				<input type="text" name="width" class="small" id="width"/>
 				<span>x</span>
 				<input type="text" name="height" class="small"/>
-
-				<div class="minMax">
-					<span>Min:</span>
-					<input type="text" name="minWidth" class="small"/>
-					<span>x</span>
-					<input type="text" name="minHeight" class="small"/>
-
-					<span class="sep">Max:</span>
-					<input type="text" name="maxWidth" class="small"/>
-					<span>x</span>
-					<input type="text" name="maxHeight" class="small"/>
-				</div>
 			</dd>
 			<dd>
 				<span>Resizable:</span>
-				<label for="resizableX" tip="bottom">
+				<label for="resizableX">
 					<input type="checkbox" id="resizableX" title="If checked, the entity instances will be horizontally resizable. In this case, the width above will define the a minimum size."/>
 					Width
 				</label>
 
-				<label for="resizableY" tip="bottom">
+				<label for="resizableY">
 					<input type="checkbox" id="resizableY" title="If checked, the entity instances will be vertically resizable. In this case, the height above will define the a minimum size."/>
 					Height
 				</label>
 
-				<label for="keepAspectRatio" tip="bottom">
+				<label for="keepAspectRatio">
 					<input type="checkbox" id="keepAspectRatio" title="If checked, the entity instance size will use the same aspect ratio as the size above."/>
 					Keep aspect ratio
+				</label>
+			</dd>
+			<dd>
+				<span>Flippable:</span>
+				<label for="flippableX">
+					<input type="checkbox" id="flippableX" title="If checked, the entity instances will be horizontally flippable."/>
+					Horizontal
+				</label>
+
+				<label for="flippableY">
+					<input type="checkbox" id="flippableY" title="If checked, the entity instances will be vertically flippable."/>
+					Vertical
+				</label>
+
+				<label for="flipAroundPivot">
+					<input type="checkbox" id="flipAroundPivot" title="If checked, the entity instances will flip around their pivot instead of just within their existing bounds."/>
+					Flip around pivot
 				</label>
 			</dd>
 
@@ -148,17 +152,6 @@
 					Hollow
 				</label>
 			</dd>
-
-
-			<dt class="uiTile">
-				<label>Alt UI icon</label>
-				<div class="info">Alternative icon to represent this entity in the interface panels and lists.\nIf not set, the Editor Visual settings (see above) will be used by default.</div>
-			</dt>
-			<dd class="uiTile">
-				<select class="uiTileset"></select>
-				<div class="uiTilePicker"></div>
-			</dd>
-
 
 			<dt>
 				<label>Pivot point</label>

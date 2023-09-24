@@ -15,10 +15,6 @@ class Modal extends dn.Process {
 	var jMask: js.jquery.JQuery;
 	public var canBeClosedManually = true;
 
-	var anchor : ModalAnchor;
-	var anchorInvalidated = true;
-
-
 	public function new() {
 		super(Editor.ME);
 
@@ -27,7 +23,6 @@ class Modal extends dn.Process {
 
 		Tip.clear();
 		ALL.push(this);
-		anchor = MA_Free;
 
 		jModalAndMask = new J("xml#window").children().first().clone();
 		App.ME.jPage.append(jModalAndMask).addClass("hasModal");
@@ -47,63 +42,20 @@ class Modal extends dn.Process {
 		if( editor!=null )
 			editor.ge.addGlobalListener(onGlobalEvent);
 
-		for(e in ALL)
-			if( e!=this && !e.isClosing() )
-				e.onAnotherModalOpen();
+		positionNear();
 	}
 
 	function onClickMask() {}
-	function onAnotherModalOpen() {}
-	function onAnotherModalClose() {}
 
+	public function positionNear(?target:js.jquery.JQuery, ?m:Coords) {
+		if( target==null && m==null )
+			jModalAndMask.addClass("centered");
+		else {
+			jModalAndMask.removeClass("centered");
+			var docHei = App.ME.jDoc.innerHeight();
 
-	public function setAnchor(a:ModalAnchor, applyNow=true) {
-		this.anchor = a;
-		if( applyNow )
-			applyAnchor();
-		anchorInvalidated = true;
-	}
-
-
-	function applyAnchor() {
-		var docHei = App.ME.jDoc.innerHeight();
-
-		switch anchor {
-			case MA_Free:
-				jModalAndMask.removeClass("centered");
-
-			case MA_Centered:
-				jModalAndMask.addClass("centered");
-				// Force scrollbars when modal is bigger than window
-				if( !jModalAndMask.hasClass("forceScroll") && jContent.outerHeight()>=App.ME.jDoc.innerHeight() )
-					jModalAndMask.addClass("forceScroll");
-				else if( jModalAndMask.hasClass("forceScroll") && jContent.outerHeight()<App.ME.jDoc.innerHeight() )
-					jModalAndMask.removeClass("forceScroll");
-
-			case MA_JQuery(jTarget):
-				jModalAndMask.removeClass("centered");
-				var targetOff = jTarget.offset();
-				var toLeft = targetOff.left>=js.Browser.window.innerWidth*0.6;
-				var x = toLeft ? targetOff.left+jTarget.outerWidth()-jContent.width() : targetOff.left;
-				if( targetOff.top>=docHei*0.7 ) {
-					// Place above target
-					jWrapper.offset({
-						left: x,
-						top: 0,
-					});
-					jWrapper.css("top", "auto");
-					jWrapper.css("bottom", (docHei-targetOff.top)+"px");
-				}
-				else {
-					// Place beneath target
-					jWrapper.offset({
-						left: x,
-						top: targetOff.top + jTarget.outerHeight()
-					});
-				}
-
-			case MA_Coords(m):
-				jModalAndMask.removeClass("centered");
+			if( m!=null ) {
+				// Use mouse coords
 				var toLeft = m.pageX>=js.Browser.window.innerWidth*0.6;
 				var x = toLeft ? m.pageX-jContent.width() : m.pageX;
 				var y = m.pageY;
@@ -123,29 +75,29 @@ class Modal extends dn.Process {
 						top: y+10,
 					});
 				}
-		}
-
-		// Window bounds clamping
-		switch anchor {
-			case MA_Free:
-			case MA_Centered:
-			case MA_JQuery(_), MA_Coords(_):
-				var padding = 16;
-				var x = jWrapper.offset().left;
-				var y = jWrapper.offset().top;
-				var hei = jWrapper.outerHeight();
-				if( y<padding ) {
+			}
+			else {
+				// Use DOM element
+				var targetOff = target.offset();
+				var toLeft = targetOff.left>=js.Browser.window.innerWidth*0.6;
+				var x = toLeft ? targetOff.left+target.outerWidth()-jContent.width() : targetOff.left;
+				if( targetOff.top>=docHei*0.7 ) {
+					// Place above target
 					jWrapper.offset({
 						left: x,
-						top: padding,
+						top: 0,
 					});
+					jWrapper.css("top", "auto");
+					jWrapper.css("bottom", (docHei-targetOff.top)+"px");
 				}
-				else if( y > docHei-padding-hei ) {
+				else {
+					// Place beneath target
 					jWrapper.offset({
 						left: x,
-						top: docHei - padding - hei
+						top: targetOff.top+target.outerHeight()
 					});
 				}
+			}
 		}
 	}
 
@@ -157,10 +109,6 @@ class Modal extends dn.Process {
 		jModalAndMask.addClass(cname);
 	}
 
-	public function removeClass(cname:String) {
-		jModalAndMask.removeClass(cname);
-	}
-
 	override function onDispose() {
 		super.onDispose();
 
@@ -169,24 +117,19 @@ class Modal extends dn.Process {
 			editor.ge.removeListener(onGlobalEvent);
 
 		jModalAndMask.remove();
+		jModalAndMask = null;
+		jMask = null;
+		jContent = null;
 
-		if( hasAnyOpen() ) {
-			for(e in ALL)
-				if( !e.isClosing() )
-					e.onAnotherModalClose();
-		}
-		else
+		if( !hasAnyOpen() )
 			App.ME.jBody.removeClass("hasModal");
-
 	}
 
 	public static function closeAll(?except:Modal) {
 		var any = false;
-
-		var w = ALL.length;
-		while (--w >= 0)
-			if ( !ALL[w].isClosing() && ( except==null || ALL[w]!=except ) && ALL[w].canBeClosedManually ) {
-				ALL[w].close();
+		for(w in ALL)
+			if( !w.isClosing() && ( except==null || w!=except ) && w.canBeClosedManually ) {
+				w.close();
 				any = true;
 			}
 		return any;
@@ -206,17 +149,13 @@ class Modal extends dn.Process {
 		return false;
 	}
 
-	function isLast() {
-		return ALL[ALL.length-1]==this;
-	}
-
 	public static function closeLatest() {
 		if( !hasAnyOpen() )
 			return false;
 
 		var i = ALL.length-1;
 		while( i>=0 )
-			if( ALL[i].isClosing() )
+			if( ALL[i].destroyed )
 				i--;
 			else if( !ALL[i].canBeClosedManually )
 				return false;
@@ -298,15 +237,13 @@ class Modal extends dn.Process {
 
 	override function onResize() {
 		super.onResize();
-		anchorInvalidated = true;
-	}
 
-
-	override function postUpdate() {
-		super.postUpdate();
-		if( anchorInvalidated ) {
-			anchorInvalidated = false;
-			applyAnchor();
+		// Force scrollbars when modal is bigger than window
+		if( jModalAndMask.hasClass("centered") ) {
+			if( !jModalAndMask.hasClass("forceScroll") && jContent.outerHeight()>=App.ME.jDoc.innerHeight() )
+				jModalAndMask.addClass("forceScroll");
+			else if( jModalAndMask.hasClass("forceScroll") && jContent.outerHeight()<App.ME.jDoc.innerHeight() )
+				jModalAndMask.removeClass("forceScroll");
 		}
 	}
 }

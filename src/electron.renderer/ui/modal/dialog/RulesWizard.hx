@@ -74,7 +74,6 @@ class RulesWizard extends ui.modal.Dialog {
 
 	var mainValue : Int = 0;
 	var otherValue : Int = 0;
-	var breakOnMatch = true;
 
 	var _allFragmentEnums : Array<WallFragment> = [];
 
@@ -186,20 +185,13 @@ class RulesWizard extends ui.modal.Dialog {
 		editedGroup = source;
 		setName(source.name);
 
-		var i = 0;
-		for(rd in source.rules) {
-			// Guess break on match setting
-			if( i==0 )
-				breakOnMatch = rd.breakOnMatch;
-
-			// Iterate all rules from this group, and try to match them with standard Fragments
-			for(f in _allFragmentEnums)
-				if( matchRuleToFragment(rd,f) ) {
-					fragments.set(f, rd.tileIds.copy());
-					break;
-				}
-			i++;
-		}
+		// Iterate all rules from this group, and try to match them with standard Fragments
+		for(rd in source.rules)
+		for(f in _allFragmentEnums)
+			if( matchRuleToFragment(rd,f) ) {
+				fragments.set(f, rd.tileIds.copy());
+				break;
+			}
 	}
 
 
@@ -294,22 +286,6 @@ class RulesWizard extends ui.modal.Dialog {
 
 		updateIntGridValue("main", mainValue);
 		updateIntGridValue("other", otherValue);
-
-		updateOptionsForm();
-	}
-
-	function updateOptionsForm() {
-		var jForm = jContent.find("dl.form");
-		jForm.find("*").off();
-
-		var i = Input.linkToHtmlInput(breakOnMatch, jForm.find("[name=breakOnMatch]"));
-		i.invert();
-		i.onValueChange = (v)->{
-			breakOnMatch = v;
-			updateUI();
-		}
-
-		JsTools.parseComponents(jForm);
 	}
 
 
@@ -337,6 +313,7 @@ class RulesWizard extends ui.modal.Dialog {
 
 	function updateTileset() {
 		tileset.renderAtlas();
+		tileset.renderGrid();
 	}
 
 	function updateGrid() {
@@ -346,14 +323,14 @@ class RulesWizard extends ui.modal.Dialog {
 			var f = WallFragment.createByName(jCell.attr("name"));
 			if( fragments.exists(f) ) {
 				// Defined cell
-				var jImg = td.createTileHtmlImageFromTileId(fragments.get(f)[0], 48);
+				var jImg = td.createTileHtmlImage(fragments.get(f)[0], 48);
 				jCell.append(jImg);
 				jCell.addClass("defined");
 			}
 			else if( getSymetricalAlternative(f)!=null ) {
 				// Cell is using symetrical alternative
 				var alt = getSymetricalAlternative(f);
-				var jImg = td.createTileHtmlImageFromTileId(fragments.get(alt.f)[0], 48);
+				var jImg = td.createTileHtmlImage(fragments.get(alt.f)[0], 48);
 				if( alt.flipX && alt.flipY )
 					jImg.css("transform", "scaleX(-1) scaleY(-1)");
 				else if( alt.flipX )
@@ -782,7 +759,7 @@ class RulesWizard extends ui.modal.Dialog {
 		// 		opaque = false;
 		// 		break;
 		// 	}
-		rd.breakOnMatch = breakOnMatch;
+		// rd.breakOnMatch = opaque;
 
 		// Update flip X/Y flags
 		for(e in _allFragmentEnums)
@@ -795,7 +772,7 @@ class RulesWizard extends ui.modal.Dialog {
 			}
 
 		// Trim & cleanup
-		rd.tidy(ld);
+		rd.tidy();
 
 		return true;
 	}

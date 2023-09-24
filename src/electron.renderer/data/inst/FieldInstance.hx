@@ -61,8 +61,8 @@ class FieldInstance {
 		return {
 			// Fields preceded by "__" are only exported to facilitate parsing
 			__identifier: def.identifier,
-			__type: def.getJsonTypeString(),
 			__value: def.isArray ? [ for(i in 0...getArrayLength()) getJsonValue(i) ] : getJsonValue(0),
+			__type: def.getJsonTypeString(),
 			__tile: getSmartTile(),
 
 			defUid: defUid,
@@ -362,11 +362,7 @@ class FieldInstance {
 						case Any:
 						case OnlySame:
 							if( thisEi!=null && thisEi.def.identifier!=tei.def.identifier )
-								return "Invalid ref type "+tei.def.identifier;
-
-						case OnlySpecificEntity:
-							if( tei.def.uid!=def.allowedRefsEntityUid )
-								return "Invalid ref type "+tei.def.identifier;
+								return "Invalid ref type "+def.identifier+" vs "+tei.def.identifier;
 
 						case OnlyTags:
 							if( !tei.def.tags.hasAnyTagFoundIn(def.allowedRefTags) )
@@ -415,7 +411,7 @@ class FieldInstance {
 			case F_Enum(enumDefUid):
 				var ed = _project.defs.getEnumDef(enumDefUid);
 				var e = getEnumValue(arrayIdx);
-				return e!=null && ed.iconTilesetUid!=null && ed.getValue(e).tileRect!=null;
+				return e!=null && ed.iconTilesetUid!=null && ed.getValue(e).tileId!=null;
 
 			case F_Tile:
 				return def.tilesetUid!=null && ( !valueIsNull(arrayIdx) || def.getTileRectDefaultStr()!=null );
@@ -433,7 +429,7 @@ class FieldInstance {
 			case F_Enum(enumDefUid):
 				var ed = _project.defs.getEnumDef(enumDefUid);
 				var td = _project.defs.getTilesetDef(ed.iconTilesetUid);
-				return td.getTileRect( ed.getValue( getEnumValue(arrayIdx) ).tileRect );
+				return td.getTile( ed.getValue( getEnumValue(arrayIdx) ).tileId );
 
 			case F_Tile:
 				var td = _project.defs.getTilesetDef(def.tilesetUid);
@@ -702,11 +698,10 @@ class FieldInstance {
 	}
 
 
-	public function getSmartTile(forLevel=false) : Null<ldtk.Json.TilesetRect> {
-		var requiredMode : ldtk.Json.FieldDisplayMode = forLevel ? LevelTile : EntityTile;
+	public function getSmartTile() : Null<ldtk.Json.TilesetRect> {
 		switch def.type {
 			case F_Enum(enumDefUid):
-				if( valueIsNull(0) || def.editorDisplayMode!=requiredMode )
+				if( valueIsNull(0) || def.editorDisplayMode!=EntityTile )
 					return null;
 
 				var ed = _project.defs.getEnumDef(enumDefUid);
@@ -721,10 +716,18 @@ class FieldInstance {
 				if( ev==null )
 					return null;
 
-				return ev.tileRect;
+				var tid = ev.tileId;
+				return {
+					tilesetUid: ed.iconTilesetUid,
+					x: td.getTileSourceX(tid),
+					y: td.getTileSourceY(tid),
+					w: td.tileGridSize,
+					h: td.tileGridSize,
+				}
+
 
 			case F_Tile:
-				if( def.editorDisplayMode==requiredMode && !valueIsNull(0) )
+				if( def.editorDisplayMode==EntityTile && !valueIsNull(0) )
 					return getTileRectObj(0);
 				else
 					return null;

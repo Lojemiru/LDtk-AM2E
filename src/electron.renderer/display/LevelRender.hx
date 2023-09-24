@@ -42,6 +42,7 @@ class LevelRender extends dn.Process {
 		bgColor = new h2d.Bitmap();
 		root.add(bgColor, Const.DP_BG);
 
+		//bgImage = new h2d.Bitmap();
 		bgImage = new dn.heaps.TiledTexture(1, 1);
 		root.add(bgImage, Const.DP_BG);
 
@@ -93,8 +94,6 @@ class LevelRender extends dn.Process {
 				}
 
 			case WorldSelected(w):
-			case WorldCreated(w):
-			case WorldRemoved(w):
 
 			case WorldDepthSelected(worldDepth):
 
@@ -103,9 +102,8 @@ class LevelRender extends dn.Process {
 
 			case ShowDetailsChanged(active):
 				applyAllLayersVisibility();
-				applyGridVisibility();
 
-			case ViewportChanged(_), WorldLevelMoved(_), WorldSettingsChanged:
+			case ViewportChanged, WorldLevelMoved(_), WorldSettingsChanged:
 				root.setScale( camera.adjustedZoom );
 				root.x = M.round( editor.camera.width*0.5 - camera.levelX * camera.adjustedZoom );
 				root.y = M.round( editor.camera.height*0.5 - camera.levelY * camera.adjustedZoom );
@@ -185,8 +183,6 @@ class LevelRender extends dn.Process {
 				invalidateAll();
 
 			case LayerDefIntGridValuesSorted(defUid):
-
-			case LayerDefIntGridValueAdded(defUid,value):
 
 			case LayerDefIntGridValueRemoved(defUid,value,used):
 				if( used )
@@ -311,10 +307,10 @@ class LevelRender extends dn.Process {
 		return autoLayerRendering;
 	}
 
-	public inline function isLayerVisible(li:data.inst.LayerInstance, ignoreUserSettings=false) {
+	public inline function isLayerVisible(li:data.inst.LayerInstance) {
 		if( li==null || !li.visible )
 			return false;
-		else if( !ignoreUserSettings && !settings.v.showDetails )
+		else if( !settings.v.showDetails )
 			return switch li.def.type {
 				case IntGrid: li.def.isAutoLayer();
 				case Entities: false;
@@ -401,8 +397,8 @@ class LevelRender extends dn.Process {
 	public inline function bleepEntity(ei:data.inst.EntityInstance, ?overrideColor:Int, spd=1.0) : Bleep {
 		return bleepLayerRectPx(
 			ei._li,
-			Std.int( (ei.x-ei.width*ei.def.pivotX) * ei._li.def.getScale() ),
-			Std.int( (ei.y-ei.height*ei.def.pivotY) * ei._li.def.getScale() ),
+			Std.int( (ei.x-ei.width*ei.getAdjustedPivotX()) * ei._li.def.getScale() ),
+			Std.int( (ei.y-ei.height*ei.getAdjustedPivotY()) * ei._li.def.getScale() ),
 			ei.width,
 			ei.height,
 			overrideColor!=null ? overrideColor : ei.getSmartColor(true),
@@ -435,10 +431,8 @@ class LevelRender extends dn.Process {
 			bgImage.setPosition( tt.x, tt.y );
 			bgImage.scaleX = tt.scaleX;
 			bgImage.scaleY = tt.scaleY;
-			bgImage.alignPivotX = tt.alignPivotX;
-			bgImage.alignPivotY = tt.alignPivotY;
 			bgImage.visible = true;
-			bgImage.alpha = settings.v.singleLayerMode ? getSingleLayerModeAlpha() : 1;
+			bgImage.alpha = settings.v.singleLayerMode ? 0.2 : 1;
 			bgImage.filter = settings.v.singleLayerMode ? getSingleLayerModeFilter() : null;
 			bgImage.resize(tt.width, tt.height);
 		}
@@ -464,7 +458,7 @@ class LevelRender extends dn.Process {
 	}
 
 	inline function applyGridVisibility() {
-		grid.visible = settings.v.grid && settings.v.showDetails && !editor.worldMode && editor.curLayerInstance!=null;
+		grid.visible = settings.v.grid && !editor.worldMode && editor.curLayerInstance!=null;
 	}
 
 	inline function updateGridPos() {
@@ -609,21 +603,17 @@ class LevelRender extends dn.Process {
 			return;
 
 		lr.root.visible = isLayerVisible(li);
-		lr.root.alpha = li.def.displayOpacity * ( !settings.v.singleLayerMode || li==editor.curLayerInstance ? 1 : getSingleLayerModeAlpha() );
+		lr.root.alpha = li.def.displayOpacity * ( !settings.v.singleLayerMode || li==editor.curLayerInstance ? 1 : 0.2 );
 		lr.root.filter = !settings.v.singleLayerMode || li==editor.curLayerInstance ? null : getSingleLayerModeFilter();
 		if( li!=editor.curLayerInstance )
 			lr.root.alpha *= li.def.inactiveOpacity;
 	}
 
-	inline function getSingleLayerModeFilter() : h2d.filter.Filter {
+	function getSingleLayerModeFilter() : h2d.filter.Filter {
 		return new h2d.filter.Group([
-			C.getColorizeFilterH2d(0x8c99c1, settings.v.singleLayerModeIntensity),
-			new h2d.filter.Blur( M.nextPow2(M.round(8*settings.v.singleLayerModeIntensity)) ),
+			C.getColorizeFilterH2d(0x8c99c1, 0.9),
+			new h2d.filter.Blur(2),
 		]);
-	}
-
-	inline function getSingleLayerModeAlpha() {
-		return 0.8 - 0.75*settings.v.singleLayerModeIntensity;
 	}
 
 

@@ -160,7 +160,7 @@ class DebugMenu extends ui.modal.ContextMenu {
 					cb: ()->{
 						editor.gifMode = !editor.gifMode;
 						if( editor.gifMode ) {
-							editor.setZenMode(true);
+							editor.setCompactMode(true);
 							N.success("GIF mode: ON");
 						}
 						else

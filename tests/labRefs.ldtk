@@ -5,15 +5,13 @@
 		"doc": "https://ldtk.io/json",
 		"schema": "https://ldtk.io/files/JSON_SCHEMA.json",
 		"appAuthor": "Sebastien 'deepnight' Benard",
-		"appVersion": "1.3.0",
+		"appVersion": "1.2.0",
 		"url": "https://ldtk.io"
 	},
-	"iid": "632f6660-c640-11ed-ac88-8b7d413097bd",
-	"jsonVersion": "1.3.0",
-	"appBuildId": 467243,
-	"nextUid": 48,
+	"jsonVersion": "1.2.0",
+	"appBuildId": 464318,
+	"nextUid": 46,
 	"identifierStyle": "Capitalize",
-	"toc": [],
 	"worldLayout": null,
 	"worldGridWidth": null,
 	"worldGridHeight": null,
@@ -29,13 +27,11 @@
 	"exportTiled": false,
 	"simplifiedExport": false,
 	"imageExportMode": "None",
-	"exportLevelBg": true,
 	"pngFilePattern": null,
 	"backupOnSave": false,
 	"backupLimit": 10,
 	"levelNamePattern": "%world_Level_%idx",
 	"tutorialDesc": null,
-	"customCommands": [],
 	"flags": ["MultiWorlds"],
 	"defs": { "layers": [
 		{
@@ -43,7 +39,6 @@
 			"identifier": "Entities",
 			"type": "Entities",
 			"uid": 4,
-			"doc": null,
 			"gridSize": 16,
 			"guideGridWid": 0,
 			"guideGridHei": 0,
@@ -60,6 +55,7 @@
 			"requiredTags": [],
 			"excludedTags": [],
 			"intGridValues": [],
+			"autoTilesetDefUid": null,
 			"autoRuleGroups": [],
 			"autoSourceLayerDefUid": null,
 			"tilesetDefUid": null,
@@ -71,7 +67,6 @@
 			"identifier": "IntGrid",
 			"type": "IntGrid",
 			"uid": 19,
-			"doc": null,
 			"gridSize": 16,
 			"guideGridWid": 0,
 			"guideGridHei": 0,
@@ -88,6 +83,7 @@
 			"requiredTags": [],
 			"excludedTags": [],
 			"intGridValues": [{ "value": 1, "identifier": "wall", "color": "#BEBEBE" }],
+			"autoTilesetDefUid": 18,
 			"autoRuleGroups": [{ "uid": 20, "name": "walls", "active": true, "isOptional": false, "rules": [
 				{
 					"uid": 22,
@@ -172,8 +168,6 @@
 			"identifier": "Chain",
 			"uid": 1,
 			"tags": ["_test"],
-			"exportToToc": false,
-			"doc": null,
 			"width": 16,
 			"height": 16,
 			"resizableX": false,
@@ -187,6 +181,7 @@
 			"renderMode": "Tile",
 			"showName": true,
 			"tilesetId": 17,
+			"tileId": 608,
 			"tileRenderMode": "FitInside",
 			"tileRect": { "x": 0, "y": 304, "w": 16, "h": 16, "tilesetUid": 17 },
 			"nineSliceBorders": [],
@@ -198,7 +193,6 @@
 			"fieldDefs": [
 				{
 					"identifier": "pouet",
-					"doc": null,
 					"__type": "EntityRef",
 					"uid": 3,
 					"type": "F_EntityRef",
@@ -225,7 +219,6 @@
 					"autoChainRef": true,
 					"allowOutOfLevelRef": true,
 					"allowedRefs": "OnlySame",
-					"allowedRefsEntityUid": null,
 					"allowedRefTags": [],
 					"tilesetUid": null
 				}
@@ -235,8 +228,6 @@
 			"identifier": "ChainArray",
 			"uid": 10,
 			"tags": ["_test"],
-			"exportToToc": false,
-			"doc": null,
 			"width": 16,
 			"height": 16,
 			"resizableX": false,
@@ -250,6 +241,7 @@
 			"renderMode": "Rectangle",
 			"showName": true,
 			"tilesetId": null,
+			"tileId": null,
 			"tileRenderMode": "FitInside",
 			"tileRect": { "x": 160, "y": 0, "w": 16, "h": 16, "tilesetUid": null },
 			"nineSliceBorders": [],
@@ -261,7 +253,6 @@
 			"fieldDefs": [
 				{
 					"identifier": "pouet",
-					"doc": null,
 					"__type": "Array<EntityRef>",
 					"uid": 11,
 					"type": "F_EntityRef",
@@ -288,7 +279,6 @@
 					"autoChainRef": true,
 					"allowOutOfLevelRef": true,
 					"allowedRefs": "OnlySame",
-					"allowedRefsEntityUid": null,
 					"allowedRefTags": [],
 					"tilesetUid": null
 				}
@@ -298,8 +288,6 @@
 			"identifier": "Teleport",
 			"uid": 6,
 			"tags": ["gameObjects"],
-			"exportToToc": false,
-			"doc": null,
 			"width": 16,
 			"height": 16,
 			"resizableX": false,
@@ -313,6 +301,7 @@
 			"renderMode": "Tile",
 			"showName": true,
 			"tilesetId": 17,
+			"tileId": 366,
 			"tileRenderMode": "FitInside",
 			"tileRect": { "x": 224, "y": 176, "w": 16, "h": 16, "tilesetUid": 17 },
 			"nineSliceBorders": [],
@@ -324,7 +313,6 @@
 			"fieldDefs": [
 				{
 					"identifier": "destination",
-					"doc": null,
 					"__type": "EntityRef",
 					"uid": 7,
 					"type": "F_EntityRef",
@@ -351,7 +339,6 @@
 					"autoChainRef": true,
 					"allowOutOfLevelRef": true,
 					"allowedRefs": "OnlySame",
-					"allowedRefsEntityUid": null,
 					"allowedRefTags": [],
 					"tilesetUid": null
 				}
@@ -361,8 +348,6 @@
 			"identifier": "TeleportArray",
 			"uid": 8,
 			"tags": ["_test"],
-			"exportToToc": false,
-			"doc": null,
 			"width": 16,
 			"height": 16,
 			"resizableX": false,
@@ -376,6 +361,7 @@
 			"renderMode": "Tile",
 			"showName": true,
 			"tilesetId": 17,
+			"tileId": 107,
 			"tileRenderMode": "FitInside",
 			"tileRect": { "x": 176, "y": 48, "w": 16, "h": 16, "tilesetUid": 17 },
 			"nineSliceBorders": [],
@@ -387,7 +373,6 @@
 			"fieldDefs": [
 				{
 					"identifier": "refs",
-					"doc": null,
 					"__type": "Array<EntityRef>",
 					"uid": 9,
 					"type": "F_EntityRef",
@@ -414,7 +399,6 @@
 					"autoChainRef": true,
 					"allowOutOfLevelRef": true,
 					"allowedRefs": "OnlySame",
-					"allowedRefsEntityUid": null,
 					"allowedRefTags": [],
 					"tilesetUid": null
 				}
@@ -424,8 +408,6 @@
 			"identifier": "Button",
 			"uid": 12,
 			"tags": ["gameObjects"],
-			"exportToToc": false,
-			"doc": null,
 			"width": 16,
 			"height": 16,
 			"resizableX": false,
@@ -439,6 +421,7 @@
 			"renderMode": "Tile",
 			"showName": true,
 			"tilesetId": 17,
+			"tileId": 12,
 			"tileRenderMode": "FitInside",
 			"tileRect": { "x": 192, "y": 0, "w": 16, "h": 16, "tilesetUid": 17 },
 			"nineSliceBorders": [],
@@ -450,7 +433,6 @@
 			"fieldDefs": [
 				{
 					"identifier": "target",
-					"doc": null,
 					"__type": "Array<EntityRef>",
 					"uid": 14,
 					"type": "F_EntityRef",
@@ -477,7 +459,6 @@
 					"autoChainRef": true,
 					"allowOutOfLevelRef": false,
 					"allowedRefs": "OnlyTags",
-					"allowedRefsEntityUid": null,
 					"allowedRefTags": ["triggerable"],
 					"tilesetUid": null
 				}
@@ -487,8 +468,6 @@
 			"identifier": "Repeater",
 			"uid": 15,
 			"tags": ["triggerable"],
-			"exportToToc": false,
-			"doc": null,
 			"width": 16,
 			"height": 16,
 			"resizableX": false,
@@ -502,6 +481,7 @@
 			"renderMode": "Tile",
 			"showName": true,
 			"tilesetId": 17,
+			"tileId": 32,
 			"tileRenderMode": "FitInside",
 			"tileRect": { "x": 0, "y": 16, "w": 16, "h": 16, "tilesetUid": 17 },
 			"nineSliceBorders": [],
@@ -513,7 +493,6 @@
 			"fieldDefs": [
 				{
 					"identifier": "target",
-					"doc": null,
 					"__type": "Array<EntityRef>",
 					"uid": 16,
 					"type": "F_EntityRef",
@@ -540,13 +519,11 @@
 					"autoChainRef": true,
 					"allowOutOfLevelRef": false,
 					"allowedRefs": "OnlyTags",
-					"allowedRefsEntityUid": null,
 					"allowedRefTags": ["triggerable"],
 					"tilesetUid": null
 				},
 				{
 					"identifier": "delay",
-					"doc": null,
 					"__type": "Float",
 					"uid": 24,
 					"type": "F_Float",
@@ -573,7 +550,6 @@
 					"autoChainRef": false,
 					"allowOutOfLevelRef": true,
 					"allowedRefs": "OnlySame",
-					"allowedRefsEntityUid": null,
 					"allowedRefTags": [],
 					"tilesetUid": null
 				}
@@ -583,8 +559,6 @@
 			"identifier": "CircuitBreaker",
 			"uid": 27,
 			"tags": ["triggerable"],
-			"exportToToc": false,
-			"doc": null,
 			"width": 16,
 			"height": 16,
 			"resizableX": false,
@@ -598,6 +572,7 @@
 			"renderMode": "Tile",
 			"showName": true,
 			"tilesetId": 17,
+			"tileId": 366,
 			"tileRenderMode": "FitInside",
 			"tileRect": { "x": 224, "y": 176, "w": 16, "h": 16, "tilesetUid": 17 },
 			"nineSliceBorders": [],
@@ -609,7 +584,6 @@
 			"fieldDefs": [
 				{
 					"identifier": "refs",
-					"doc": null,
 					"__type": "Array<EntityRef>",
 					"uid": 29,
 					"type": "F_EntityRef",
@@ -636,7 +610,6 @@
 					"autoChainRef": true,
 					"allowOutOfLevelRef": false,
 					"allowedRefs": "OnlyTags",
-					"allowedRefsEntityUid": null,
 					"allowedRefTags": ["triggerable"],
 					"tilesetUid": null
 				}
@@ -646,8 +619,6 @@
 			"identifier": "LightBulb",
 			"uid": 13,
 			"tags": ["triggerable"],
-			"exportToToc": false,
-			"doc": null,
 			"width": 16,
 			"height": 16,
 			"resizableX": false,
@@ -661,6 +632,7 @@
 			"renderMode": "Tile",
 			"showName": true,
 			"tilesetId": 17,
+			"tileId": 258,
 			"tileRenderMode": "FitInside",
 			"tileRect": { "x": 32, "y": 128, "w": 16, "h": 16, "tilesetUid": 17 },
 			"nineSliceBorders": [],
@@ -675,8 +647,6 @@
 			"identifier": "Mob",
 			"uid": 40,
 			"tags": ["MobData"],
-			"exportToToc": false,
-			"doc": null,
 			"width": 24,
 			"height": 24,
 			"resizableX": false,
@@ -690,6 +660,7 @@
 			"renderMode": "Tile",
 			"showName": true,
 			"tilesetId": 17,
+			"tileId": 480,
 			"tileRenderMode": "FitInside",
 			"tileRect": { "x": 0, "y": 240, "w": 16, "h": 16, "tilesetUid": 17 },
 			"nineSliceBorders": [],
@@ -701,7 +672,6 @@
 			"fieldDefs": [
 				{
 					"identifier": "patrol",
-					"doc": null,
 					"__type": "EntityRef",
 					"uid": 41,
 					"type": "F_EntityRef",
@@ -728,7 +698,6 @@
 					"autoChainRef": true,
 					"allowOutOfLevelRef": false,
 					"allowedRefs": "OnlyTags",
-					"allowedRefsEntityUid": null,
 					"allowedRefTags": ["MobData"],
 					"tilesetUid": null
 				}
@@ -738,8 +707,6 @@
 			"identifier": "PatrolPoint",
 			"uid": 38,
 			"tags": ["MobData"],
-			"exportToToc": false,
-			"doc": null,
 			"width": 12,
 			"height": 12,
 			"resizableX": false,
@@ -753,6 +720,7 @@
 			"renderMode": "Tile",
 			"showName": false,
 			"tilesetId": 17,
+			"tileId": 1504,
 			"tileRenderMode": "FitInside",
 			"tileRect": { "x": 0, "y": 752, "w": 16, "h": 16, "tilesetUid": 17 },
 			"nineSliceBorders": [],
@@ -764,7 +732,6 @@
 			"fieldDefs": [
 				{
 					"identifier": "next",
-					"doc": null,
 					"__type": "EntityRef",
 					"uid": 39,
 					"type": "F_EntityRef",
@@ -791,13 +758,11 @@
 					"autoChainRef": true,
 					"allowOutOfLevelRef": false,
 					"allowedRefs": "OnlyTags",
-					"allowedRefsEntityUid": null,
 					"allowedRefTags": ["MobData"],
 					"tilesetUid": null
 				},
 				{
 					"identifier": "waitHere",
-					"doc": null,
 					"__type": "Float",
 					"uid": 43,
 					"type": "F_Float",
@@ -824,70 +789,6 @@
 					"autoChainRef": false,
 					"allowOutOfLevelRef": true,
 					"allowedRefs": "OnlySame",
-					"allowedRefsEntityUid": null,
-					"allowedRefTags": [],
-					"tilesetUid": null
-				}
-			]
-		},
-		{
-			"identifier": "LightButton",
-			"uid": 46,
-			"tags": ["gameObjects"],
-			"exportToToc": false,
-			"doc": null,
-			"width": 16,
-			"height": 16,
-			"resizableX": false,
-			"resizableY": false,
-			"keepAspectRatio": false,
-			"tileOpacity": 1,
-			"fillOpacity": 0.08,
-			"lineOpacity": 0,
-			"hollow": false,
-			"color": "#FEE761",
-			"renderMode": "Tile",
-			"showName": true,
-			"tilesetId": 17,
-			"tileRenderMode": "FitInside",
-			"tileRect": { "tilesetUid": 17, "x": 64, "y": 80, "w": 16, "h": 16 },
-			"nineSliceBorders": [],
-			"maxCount": 0,
-			"limitScope": "PerLevel",
-			"limitBehavior": "MoveLastOne",
-			"pivotX": 0,
-			"pivotY": 0,
-			"fieldDefs": [
-				{
-					"identifier": "target",
-					"doc": null,
-					"__type": "EntityRef",
-					"uid": 47,
-					"type": "F_EntityRef",
-					"isArray": false,
-					"canBeNull": false,
-					"arrayMinLength": null,
-					"arrayMaxLength": null,
-					"editorDisplayMode": "RefLinkBetweenCenters",
-					"editorDisplayPos": "Above",
-					"editorLinkStyle": "CurvedArrow",
-					"editorAlwaysShow": false,
-					"editorShowInWorld": true,
-					"editorCutLongValues": true,
-					"editorTextSuffix": null,
-					"editorTextPrefix": null,
-					"useForSmartColor": false,
-					"min": null,
-					"max": null,
-					"regex": null,
-					"acceptFileTypes": null,
-					"defaultOverride": null,
-					"textLanguageMode": null,
-					"symmetricalRef": false,
-					"autoChainRef": true,
-					"allowOutOfLevelRef": true,
-					"allowedRefs": "OnlySpecificEntity",
-					"allowedRefsEntityUid": 13,
 					"allowedRefTags": [],
 					"tilesetUid": null
 				}
@@ -939,9 +840,9 @@
 			}
 		}
 	], "enums": [{ "identifier": "A", "uid": 25, "values": [
-		{ "id": "A0", "tileRect": { "tilesetUid": 17, "x": 208, "y": 80, "w": 16, "h": 16 }, "tileId": -1, "color": 11184810, "__tileSrcRect": [208,80,16,16] },
-		{ "id": "A1", "tileRect": { "tilesetUid": 17, "x": 96, "y": 224, "w": 16, "h": 16 }, "tileId": -1, "color": 7825066, "__tileSrcRect": [96,224,16,16] },
-		{ "id": "A2", "tileRect": { "tilesetUid": 17, "x": 176, "y": 304, "w": 16, "h": 16 }, "tileId": -1, "color": 3377220, "__tileSrcRect": [176,304,16,16] }
+		{ "id": "A0", "tileId": 173, "color": 11184810, "__tileSrcRect": [208,80,16,16] },
+		{ "id": "A1", "tileId": 454, "color": 7825066, "__tileSrcRect": [96,224,16,16] },
+		{ "id": "A2", "tileId": 619, "color": 3377220, "__tileSrcRect": [176,304,16,16] }
 	], "iconTilesetUid": 17, "externalRelPath": null, "externalFileChecksum": null, "tags": [] }], "externalEnums": [], "levelFields": [] },
 	"levels": [],
 	"worlds": [
@@ -1282,28 +1183,6 @@
 								}, "__type": "EntityRef", "__tile": null, "defUid": 7, "realEditorValues": [{
 									"id": "V_String",
 									"params": ["071e7f50-66b0-11ec-bb2d-971255f399c0"]
-								}] }]
-							},
-							{
-								"__identifier": "LightButton",
-								"__grid": [18,17],
-								"__pivot": [0,0],
-								"__tags": ["gameObjects"],
-								"__tile": { "tilesetUid": 17, "x": 64, "y": 80, "w": 16, "h": 16 },
-								"__smartColor": "#FEE761",
-								"iid": "bcdb38a0-c640-11ed-b6e8-6b9b75bd04d4",
-								"width": 16,
-								"height": 16,
-								"defUid": 46,
-								"px": [288,272],
-								"fieldInstances": [{ "__identifier": "target", "__value": {
-									"entityIid": "395513a0-66b0-11ec-ba8a-29f4cb38abe3",
-									"layerIid": "0f070c30-66b0-11ec-8917-0548426d19e2",
-									"levelIid": "ee57e400-66b0-11ec-8917-7d1d935ce7e5",
-									"worldIid": "fb4f4600-66b0-11ec-bb2d-6fd64b0cacd8"
-								}, "__type": "EntityRef", "__tile": null, "defUid": 47, "realEditorValues": [{
-									"id": "V_String",
-									"params": ["395513a0-66b0-11ec-ba8a-29f4cb38abe3"]
 								}] }]
 							}
 						]
@@ -3430,7 +3309,7 @@
 						"entityInstances": []
 					}
 				],
-				"__neighbours": [{ "levelIid": "908e20e0-66b0-11ec-abd0-8d9d4b465507", "dir": "s" }]
+				"__neighbours": [{ "levelIid": "908e20e0-66b0-11ec-abd0-8d9d4b465507", "levelUid": 5, "dir": "s" }]
 			},
 			{
 				"identifier": "World_Level_1",
@@ -4084,7 +3963,7 @@
 						"entityInstances": []
 					}
 				],
-				"__neighbours": [{ "levelIid": "ee57e400-66b0-11ec-8917-7d1d935ce7e5", "dir": "n" }]
+				"__neighbours": [{ "levelIid": "ee57e400-66b0-11ec-8917-7d1d935ce7e5", "levelUid": 0, "dir": "n" }]
 			}
 		] },
 		{ "iid": "04d99860-66b0-11ec-bb2d-6ff0e092b348", "identifier": "World2", "defaultLevelWidth": 256, "defaultLevelHeight": 256, "worldGridWidth": 256, "worldGridHeight": 256, "worldLayout": "Free", "levels": [
@@ -4358,6 +4237,5 @@
 				"__neighbours": []
 			}
 		] }
-	],
-	"dummyWorldIid": "632fdb90-c640-11ed-ac88-ffe029682544"
+	]
 }

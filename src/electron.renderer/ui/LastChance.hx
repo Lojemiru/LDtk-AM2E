@@ -38,7 +38,7 @@ class LastChance extends dn.Process {
 
 	function onGlobalEvent(e:GlobalEvent) {
 		switch(e) {
-			case ViewportChanged(_):
+			case ViewportChanged:
 			case LevelSelected(l):
 			case LayerInstanceSelected:
 			case LayerInstanceVisiblityChanged(li):

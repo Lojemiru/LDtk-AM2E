@@ -10,7 +10,6 @@ class Project {
 	static var EMBED_CACHED_IMAGE_PREFIX = "embed#";
 
 	public var filePath : dn.FilePath; // not stored in JSON
-	public var backupOriginalFile : Null<dn.FilePath>; // This represents the path to the original Project from this backup (not stored in JSON)
 	var usedColors : Map<String, Map<Int,Int>> = new Map();
 
 	var nextUid = 0;
@@ -24,8 +23,6 @@ class Project {
 	public var defaultPivotX : Float;
 	public var defaultPivotY : Float;
 	public var defaultGridSize : Int;
-	public var defaultEntityWidth : Int;
-	public var defaultEntityHeight : Int;
 	public var bgColor : UInt;
 	public var defaultLevelBgColor : UInt;
 
@@ -43,7 +40,6 @@ class Project {
 
 	public var backupOnSave = false;
 	public var backupLimit = 10;
-	public var backupRelPath : Null<String>;
 	public var identifierStyle : ldtk.Json.IdentifierStyle = Capitalize;
 	public var tutorialDesc : Null<String>;
 	public var customCommands : Array<ldtk.Json.CustomCommand> = [];
@@ -78,24 +74,6 @@ class Project {
 
 	public function getAbsExternalFilesDir() {
 		return filePath.directoryWithSlash + filePath.fileName;
-	}
-
-	public function getAbsBackupDir() : String{
-		if( backupRelPath==null )
-			return getAbsExternalFilesDir() + filePath.slash() + Const.BACKUP_DIR;
-		else {
-			var fp = dn.FilePath.fromDir( filePath.directoryWithSlash + backupRelPath );
-			fp.useSlashes();
-			return fp.directory;
-		}
-	}
-
-	public function getBackupId() {
-		return iid;
-	}
-
-	public function makeBackupDirName(?suffix:String) {
-		return getBackupId()+"_" + DateTools.format(Date.now(), "%Y-%m-%d_%H-%M-%S") + ( suffix==null?"":"_"+suffix );
 	}
 
 	public function getRelExternalFilesDir() {
@@ -206,7 +184,6 @@ class Project {
 	public static function createEmpty(filePath:String) {
 		var p = new Project();
 		p.iid = p.generateUniqueId_UUID();
-		p.dummyWorldIid = p.generateUniqueId_UUID();
 		p.filePath.parseFilePath(filePath);
 		p.createWorld(true);
 
@@ -290,8 +267,6 @@ class Project {
 		p.defaultPivotX = JsonTools.readFloat( json.defaultPivotX, 0 );
 		p.defaultPivotY = JsonTools.readFloat( json.defaultPivotY, 0 );
 		p.defaultGridSize = JsonTools.readInt( json.defaultGridSize, Project.DEFAULT_GRID_SIZE );
-		p.defaultEntityWidth = JsonTools.readInt( json.defaultEntityWidth, Project.DEFAULT_GRID_SIZE );
-		p.defaultEntityHeight = JsonTools.readInt( json.defaultEntityHeight, Project.DEFAULT_GRID_SIZE );
 		p.bgColor = JsonTools.readColor( json.bgColor, DEFAULT_WORKSPACE_BG );
 		p.defaultLevelBgColor = JsonTools.readColor( json.defaultLevelBgColor, p.bgColor );
 		p.externalLevels = JsonTools.readBool(json.externalLevels, false);
@@ -301,12 +276,11 @@ class Project {
 		p.simplifiedExport = JsonTools.readBool( json.simplifiedExport, false );
 		p.backupOnSave = JsonTools.readBool( json.backupOnSave, false );
 		p.backupLimit = JsonTools.readInt( json.backupLimit, Const.DEFAULT_BACKUP_LIMIT );
-		p.backupRelPath = json.backupRelPath;
 		p.pngFilePattern = json.pngFilePattern;
 		p.tutorialDesc = JsonTools.unescapeString(json.tutorialDesc);
 		p.customCommands = JsonTools.readArray(json.customCommands, []).map( (cmdJson:ldtk.Json.CustomCommand)->{
 			return {
-				command: JsonTools.unescapeString(cmdJson.command),
+				command: cmdJson.command,
 				when: JsonTools.readEnum(ldtk.Json.CustomCommandTrigger, cmdJson.when, false, Manual),
 			}
 		});
@@ -320,7 +294,7 @@ class Project {
 			p.imageExportMode = json.exportPng==true ? OneImagePerLayer : None;
 		p.exportLevelBg = JsonTools.readBool(json.exportLevelBg, true);
 
-		Definitions.fromJson(p, json.defs);
+		p.defs = Definitions.fromJson(p, json.defs);
 
 		var invalidateLevelCache = false;
 		if( json.dummyWorldIid==null ) {
@@ -621,8 +595,6 @@ class Project {
 			defaultPivotX: JsonTools.writeFloat( defaultPivotX ),
 			defaultPivotY: JsonTools.writeFloat( defaultPivotY ),
 			defaultGridSize: defaultGridSize,
-			defaultEntityWidth: defaultEntityWidth,
-			defaultEntityHeight: defaultEntityHeight,
 			bgColor: JsonTools.writeColor(bgColor),
 			defaultLevelBgColor: JsonTools.writeColor(defaultLevelBgColor),
 
@@ -635,11 +607,10 @@ class Project {
 			pngFilePattern: pngFilePattern,
 			backupOnSave: backupOnSave,
 			backupLimit: backupLimit,
-			backupRelPath: backupRelPath,
 			levelNamePattern: levelNamePattern,
 			tutorialDesc : JsonTools.escapeString(tutorialDesc),
 			customCommands: customCommands.map(cmd->{
-				command: JsonTools.escapeString(cmd.command),
+				command: cmd.command,
 				when: JsonTools.writeEnum(cmd.when, false),
 			}),
 
@@ -839,7 +810,7 @@ class Project {
 		Append required ".."s if the current project is a backup
 	**/
 	public inline function fixRelativePath(relPath:Null<String>) : Null<String> {
-		return relPath==null ? null : isBackup() && backupOriginalFile!=null ? backupOriginalFile.directoryWithSlash + relPath : relPath;
+		return relPath==null ? null : isBackup() ? "../../../"+relPath : relPath;
 	}
 
 
@@ -962,9 +933,6 @@ class Project {
 	/**  WORLDS  **************************************/
 
 	public function createWorld(alsoCreateLevel:Bool) : World {
-		if( worlds.length>0 )
-			setFlag(MultiWorlds,true); // make sure it's enabled
-
 		var worldIid = hasFlag(MultiWorlds) ? generateUniqueId_UUID() : dummyWorldIid;
 		var w = new data.World(this, worldIid, "World");
 		w.identifier = fixUniqueIdStr( w.identifier, (id)->isWorldIdentifierUnique(id,w) );
@@ -973,15 +941,10 @@ class Project {
 		if( alsoCreateLevel )
 			w.createLevel();
 
+		if( worlds.length>1 )
+			setFlag(MultiWorlds,true); // make sure it's enabled
+
 		return w;
-	}
-
-	public function removeWorld(world:World) {
-		for(l in world.levels.copy())
-			world.removeLevel(l);
-
-		worlds.remove(world);
-		tidy();
 	}
 
 	public function isWorldIdentifierUnique(id:String, ?exclude:World) {
@@ -1236,22 +1199,5 @@ class Project {
 
 	public function getCustomCommmands(when:ldtk.Json.CustomCommandTrigger) {
 		return customCommands.filter( cmd->cmd.when==when );
-	}
-
-
-	public function resolveTileRectAsCanvas(r:ldtk.Json.TilesetRect, sizePx=32) : Null<js.jquery.JQuery> {
-		if( r==null )
-			return null;
-
-		var td = defs.getTilesetDef(r.tilesetUid);
-		return td!=null ? td.createCanvasFromTileRect(r, sizePx) : null;
-	}
-
-	public function resolveTileRectAsHtmlImg(r:ldtk.Json.TilesetRect, sizePx=32) : Null<js.jquery.JQuery> {
-		if( r==null )
-			return null;
-
-		var td = defs.getTilesetDef(r.tilesetUid);
-		return td!=null ? td.createTileHtmlImageFromRect(r, sizePx) : null;
 	}
 }

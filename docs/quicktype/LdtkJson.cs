@@ -55,12 +55,6 @@ namespace ldtk
         public bool BackupOnSave { get; set; }
 
         /// <summary>
-        /// Target relative path to store backup files
-        /// </summary>
-        [JsonProperty("backupRelPath")]
-        public string BackupRelPath { get; set; }
-
-        /// <summary>
         /// Project background color
         /// </summary>
         [JsonProperty("bgColor")]
@@ -71,18 +65,6 @@ namespace ldtk
         /// </summary>
         [JsonProperty("customCommands")]
         public LdtkCustomCommand[] CustomCommands { get; set; }
-
-        /// <summary>
-        /// Default height for new entities
-        /// </summary>
-        [JsonProperty("defaultEntityHeight")]
-        public long DefaultEntityHeight { get; set; }
-
-        /// <summary>
-        /// Default width for new entities
-        /// </summary>
-        [JsonProperty("defaultEntityWidth")]
-        public long DefaultEntityWidth { get; set; }
 
         /// <summary>
         /// Default grid size for new layers
@@ -129,12 +111,6 @@ namespace ldtk
         /// </summary>
         [JsonProperty("defs")]
         public Definitions Defs { get; set; }
-
-        /// <summary>
-        /// If the project isn't in MultiWorlds mode, this is the IID of the internal "dummy" World.
-        /// </summary>
-        [JsonProperty("dummyWorldIid")]
-        public string DummyWorldIid { get; set; }
 
         /// <summary>
         /// If TRUE, the exported PNGs will include the level background (color or image).
@@ -278,15 +254,17 @@ namespace ldtk
         public WorldLayout? WorldLayout { get; set; }
 
         /// <summary>
-        /// This array will be empty, unless you enable the Multi-Worlds in the project advanced
-        /// settings.<br/><br/> - in current version, a LDtk project file can only contain a single
-        /// world with multiple levels in it. In this case, levels and world layout related settings
-        /// are stored in the root of the JSON.<br/> - with "Multi-worlds" enabled, there will be a
-        /// `worlds` array in root, each world containing levels and layout settings. Basically, it's
-        /// pretty much only about moving the `levels` array to the `worlds` array, along with world
-        /// layout related values (eg. `worldGridWidth` etc).<br/><br/>If you want to start
-        /// supporting this future update easily, please refer to this documentation:
-        /// https://github.com/deepnight/ldtk/issues/231
+        /// This array is not used yet in current LDtk version (so, for now, it's always
+        /// empty).<br/><br/>In a later update, it will be possible to have multiple Worlds in a
+        /// single project, each containing multiple Levels.<br/><br/>What will change when "Multiple
+        /// worlds" support will be added to LDtk:<br/><br/> - in current version, a LDtk project
+        /// file can only contain a single world with multiple levels in it. In this case, levels and
+        /// world layout related settings are stored in the root of the JSON.<br/> - after the
+        /// "Multiple worlds" update, there will be a `worlds` array in root, each world containing
+        /// levels and layout settings. Basically, it's pretty much only about moving the `levels`
+        /// array to the `worlds` array, along with world layout related values (eg. `worldGridWidth`
+        /// etc).<br/><br/>If you want to start supporting this future update easily, please refer to
+        /// this documentation: https://github.com/deepnight/ldtk/issues/231
         /// </summary>
         [JsonProperty("worlds")]
         public World[] Worlds { get; set; }
@@ -429,30 +407,6 @@ namespace ldtk
         public long MaxCount { get; set; }
 
         /// <summary>
-        /// Max pixel height (only applies if the entity is resizable on Y)
-        /// </summary>
-        [JsonProperty("maxHeight")]
-        public long? MaxHeight { get; set; }
-
-        /// <summary>
-        /// Max pixel width (only applies if the entity is resizable on X)
-        /// </summary>
-        [JsonProperty("maxWidth")]
-        public long? MaxWidth { get; set; }
-
-        /// <summary>
-        /// Min pixel height (only applies if the entity is resizable on Y)
-        /// </summary>
-        [JsonProperty("minHeight")]
-        public long? MinHeight { get; set; }
-
-        /// <summary>
-        /// Min pixel width (only applies if the entity is resizable on X)
-        /// </summary>
-        [JsonProperty("minWidth")]
-        public long? MinWidth { get; set; }
-
-        /// <summary>
         /// An array of 4 dimensions for the up/right/down/left borders (in this order) when using
         /// 9-slice mode for `tileRenderMode`.<br/>  If the tileRenderMode is not NineSlice, then
         /// this array is empty.<br/>  See: https://en.wikipedia.org/wiki/9-slice_scaling
@@ -539,12 +493,6 @@ namespace ldtk
         public long Uid { get; set; }
 
         /// <summary>
-        /// This tile overrides the one defined in `tileRect` in the UI
-        /// </summary>
-        [JsonProperty("uiTileRect")]
-        public TilesetRectangle UiTileRect { get; set; }
-
-        /// <summary>
         /// Pixel width
         /// </summary>
         [JsonProperty("width")]
@@ -575,13 +523,10 @@ namespace ldtk
         public string[] AcceptFileTypes { get; set; }
 
         /// <summary>
-        /// Possible values: `Any`, `OnlySame`, `OnlyTags`, `OnlySpecificEntity`
+        /// Possible values: `Any`, `OnlySame`, `OnlyTags`
         /// </summary>
         [JsonProperty("allowedRefs")]
         public AllowedRefs AllowedRefs { get; set; }
-
-        [JsonProperty("allowedRefsEntityUid")]
-        public long? AllowedRefsEntityUid { get; set; }
 
         [JsonProperty("allowedRefTags")]
         public string[] AllowedRefTags { get; set; }
@@ -630,12 +575,9 @@ namespace ldtk
         [JsonProperty("editorCutLongValues")]
         public bool EditorCutLongValues { get; set; }
 
-        [JsonProperty("editorDisplayColor")]
-        public string EditorDisplayColor { get; set; }
-
         /// <summary>
-        /// Possible values: `Hidden`, `ValueOnly`, `NameAndValue`, `EntityTile`, `LevelTile`,
-        /// `Points`, `PointStar`, `PointPath`, `PointPathLoop`, `RadiusPx`, `RadiusGrid`,
+        /// Possible values: `Hidden`, `ValueOnly`, `NameAndValue`, `EntityTile`, `Points`,
+        /// `PointStar`, `PointPath`, `PointPathLoop`, `RadiusPx`, `RadiusGrid`,
         /// `ArrayCountWithLabel`, `ArrayCountNoLabel`, `RefLinkBetweenPivots`,
         /// `RefLinkBetweenCenters`
         /// </summary>
@@ -647,9 +589,6 @@ namespace ldtk
         /// </summary>
         [JsonProperty("editorDisplayPos")]
         public EditorDisplayPos EditorDisplayPos { get; set; }
-
-        [JsonProperty("editorDisplayScale")]
-        public double EditorDisplayScale { get; set; }
 
         /// <summary>
         /// Possible values: `ZigZag`, `StraightArrow`, `CurvedArrow`, `ArrowsLine`, `DashedLine`
@@ -816,8 +755,8 @@ namespace ldtk
     public partial class EnumValueDefinition
     {
         /// <summary>
-        /// **WARNING**: this deprecated value is no longer exported since version 1.4.0  Replaced
-        /// by: `tileRect`
+        /// An array of 4 Int values that refers to the tile in the tileset image: `[ x, y, width,
+        /// height ]`
         /// </summary>
         [JsonProperty("__tileSrcRect")]
         public long[] TileSrcRect { get; set; }
@@ -835,17 +774,10 @@ namespace ldtk
         public string Id { get; set; }
 
         /// <summary>
-        /// **WARNING**: this deprecated value is no longer exported since version 1.4.0  Replaced
-        /// by: `tileRect`
+        /// The optional ID of the tile
         /// </summary>
         [JsonProperty("tileId")]
         public long? TileId { get; set; }
-
-        /// <summary>
-        /// Optional tileset rectangle to represents this value
-        /// </summary>
-        [JsonProperty("tileRect")]
-        public TilesetRectangle TileRect { get; set; }
     }
 
     public partial class LayerDefinition
@@ -944,12 +876,6 @@ namespace ldtk
         public IntGridValueDefinition[] IntGridValues { get; set; }
 
         /// <summary>
-        /// Group informations for IntGrid values
-        /// </summary>
-        [JsonProperty("intGridValuesGroups")]
-        public IntGridValueGroupDefinition[] IntGridValuesGroups { get; set; }
-
-        /// <summary>
         /// Parallax horizontal factor (from -1 to 1, defaults to 0) which affects the scrolling
         /// speed of this layer, creating a fake 3D (parallax) effect.
         /// </summary>
@@ -982,13 +908,6 @@ namespace ldtk
         /// </summary>
         [JsonProperty("pxOffsetY")]
         public long PxOffsetY { get; set; }
-
-        /// <summary>
-        /// If TRUE, the content of this layer will be used when rendering levels in a simplified way
-        /// for the world view
-        /// </summary>
-        [JsonProperty("renderInWorldView")]
-        public bool RenderInWorldView { get; set; }
 
         /// <summary>
         /// An array of tags to filter Entities that can be added to this layer
@@ -1027,12 +946,6 @@ namespace ldtk
         public TypeEnum LayerDefinitionType { get; set; }
 
         /// <summary>
-        /// User defined color for the UI
-        /// </summary>
-        [JsonProperty("uiColor")]
-        public string UiColor { get; set; }
-
-        /// <summary>
         /// Unique Int identifier
         /// </summary>
         [JsonProperty("uid")]
@@ -1049,12 +962,6 @@ namespace ldtk
         /// </summary>
         [JsonProperty("collapsed")]
         public bool? Collapsed { get; set; }
-
-        [JsonProperty("color")]
-        public string Color { get; set; }
-
-        [JsonProperty("icon")]
-        public TilesetRectangle Icon { get; set; }
 
         [JsonProperty("isOptional")]
         public bool IsOptional { get; set; }
@@ -1084,9 +991,6 @@ namespace ldtk
         /// </summary>
         [JsonProperty("active")]
         public bool Active { get; set; }
-
-        [JsonProperty("alpha")]
-        public double Alpha { get; set; }
 
         /// <summary>
         /// When TRUE, the rule will prevent other rules to be applied in the same cell if it matches
@@ -1177,42 +1081,6 @@ namespace ldtk
         public TileMode TileMode { get; set; }
 
         /// <summary>
-        /// Max random offset for X tile pos
-        /// </summary>
-        [JsonProperty("tileRandomXMax")]
-        public long TileRandomXMax { get; set; }
-
-        /// <summary>
-        /// Min random offset for X tile pos
-        /// </summary>
-        [JsonProperty("tileRandomXMin")]
-        public long TileRandomXMin { get; set; }
-
-        /// <summary>
-        /// Max random offset for Y tile pos
-        /// </summary>
-        [JsonProperty("tileRandomYMax")]
-        public long TileRandomYMax { get; set; }
-
-        /// <summary>
-        /// Min random offset for Y tile pos
-        /// </summary>
-        [JsonProperty("tileRandomYMin")]
-        public long TileRandomYMin { get; set; }
-
-        /// <summary>
-        /// Tile X offset
-        /// </summary>
-        [JsonProperty("tileXOffset")]
-        public long TileXOffset { get; set; }
-
-        /// <summary>
-        /// Tile Y offset
-        /// </summary>
-        [JsonProperty("tileYOffset")]
-        public long TileYOffset { get; set; }
-
-        /// <summary>
         /// Unique Int identifier
         /// </summary>
         [JsonProperty("uid")]
@@ -1252,49 +1120,16 @@ namespace ldtk
         public string Color { get; set; }
 
         /// <summary>
-        /// Parent group identifier (0 if none)
-        /// </summary>
-        [JsonProperty("groupUid")]
-        public long GroupUid { get; set; }
-
-        /// <summary>
         /// User defined unique identifier
         /// </summary>
         [JsonProperty("identifier")]
         public string Identifier { get; set; }
-
-        [JsonProperty("tile")]
-        public TilesetRectangle Tile { get; set; }
 
         /// <summary>
         /// The IntGrid value itself
         /// </summary>
         [JsonProperty("value")]
         public long Value { get; set; }
-    }
-
-    /// <summary>
-    /// IntGrid value group definition
-    /// </summary>
-    public partial class IntGridValueGroupDefinition
-    {
-        /// <summary>
-        /// User defined color
-        /// </summary>
-        [JsonProperty("color")]
-        public string Color { get; set; }
-
-        /// <summary>
-        /// User defined string identifier
-        /// </summary>
-        [JsonProperty("identifier")]
-        public string Identifier { get; set; }
-
-        /// <summary>
-        /// Group unique ID
-        /// </summary>
-        [JsonProperty("uid")]
-        public long Uid { get; set; }
     }
 
     /// <summary>
@@ -1321,7 +1156,7 @@ namespace ldtk
         /// source image changes.
         /// </summary>
         [JsonProperty("cachedPixelData")]
-        public Dictionary<string, dynamic> CachedPixelData { get; set; }
+        public System.Collections.Generic.Dictionary<string, dynamic> CachedPixelData { get; set; }
 
         /// <summary>
         /// An array of custom tile metadata
@@ -1378,7 +1213,7 @@ namespace ldtk
         /// Array of group of tiles selections, only meant to be used in the editor
         /// </summary>
         [JsonProperty("savedSelections")]
-        public Dictionary<string, dynamic>[] SavedSelections { get; set; }
+        public System.Collections.Generic.Dictionary<string, dynamic>[] SavedSelections { get; set; }
 
         /// <summary>
         /// Space in pixels between all tiles
@@ -1481,9 +1316,6 @@ namespace ldtk
         [JsonProperty("IntGridValueDef", NullValueHandling = NullValueHandling.Ignore)]
         public IntGridValueDefinition IntGridValueDef { get; set; }
 
-        [JsonProperty("IntGridValueGroupDef", NullValueHandling = NullValueHandling.Ignore)]
-        public IntGridValueGroupDefinition IntGridValueGroupDef { get; set; }
-
         [JsonProperty("IntGridValueInstance", NullValueHandling = NullValueHandling.Ignore)]
         public IntGridValueInstance IntGridValueInstance { get; set; }
 
@@ -1560,18 +1392,6 @@ namespace ldtk
         /// </summary>
         [JsonProperty("__tile")]
         public TilesetRectangle Tile { get; set; }
-
-        /// <summary>
-        /// X world coordinate in pixels
-        /// </summary>
-        [JsonProperty("__worldX")]
-        public long WorldX { get; set; }
-
-        /// <summary>
-        /// Y world coordinate in pixels
-        /// </summary>
-        [JsonProperty("__worldY")]
-        public long WorldY { get; set; }
 
         /// <summary>
         /// Reference of the **Entity definition** UID
@@ -1888,12 +1708,6 @@ namespace ldtk
     public partial class TileInstance
     {
         /// <summary>
-        /// Alpha/opacity of the tile (0-1, defaults to 1)
-        /// </summary>
-        [JsonProperty("a")]
-        public double A { get; set; }
-
-        /// <summary>
         /// Internal data used by the editor.<br/>  For auto-layer tiles: `[ruleId, coordId]`.<br/>
         /// For tile-layer tiles: `[coordId]`.
         /// </summary>
@@ -1954,10 +1768,9 @@ namespace ldtk
         public LevelBackgroundPosition BgPos { get; set; }
 
         /// <summary>
-        /// An array listing all other levels touching this one on the world map. Since 1.3.5, this
-        /// includes levels that overlap in the same world layer, or in nearby world layers.<br/>
-        /// Only relevant for world layouts where level spatial positioning is manual (ie. GridVania,
-        /// Free). For Horizontal and Vertical layouts, this array is always empty.
+        /// An array listing all other levels touching this one on the world map.<br/>  Only relevant
+        /// for world layouts where level spatial positioning is manual (ie. GridVania, Free). For
+        /// Horizontal and Vertical layouts, this array is always empty.
         /// </summary>
         [JsonProperty("__neighbours")]
         public NeighbourLevel[] Neighbours { get; set; }
@@ -1991,7 +1804,7 @@ namespace ldtk
         /// <summary>
         /// An enum defining the way the background image (if any) is positioned on the level. See
         /// `__bgPos` for resulting position info. Possible values: &lt;`null`&gt;, `Unscaled`,
-        /// `Contain`, `Cover`, `CoverDirty`, `Repeat`
+        /// `Contain`, `Cover`, `CoverDirty`
         /// </summary>
         [JsonProperty("bgPos")]
         public BgPos? LevelBgPos { get; set; }
@@ -2121,9 +1934,7 @@ namespace ldtk
     {
         /// <summary>
         /// A single lowercase character tipping on the level location (`n`orth, `s`outh, `w`est,
-        /// `e`ast).<br/>  Since 1.3.5, this character value can also be `<` (neighbour depth is
-        /// lower), `>` (neighbour depth is greater) or `o` (levels overlap and share the same world
-        /// depth).
+        /// `e`ast).
         /// </summary>
         [JsonProperty("dir")]
         public string Dir { get; set; }
@@ -2152,9 +1963,9 @@ namespace ldtk
     }
 
     /// <summary>
-    /// **IMPORTANT**: this type is available as a preview. You can rely on it to update your
-    /// importers, for when it will be officially available.  A World contains multiple levels,
-    /// and it has its own layout settings.
+    /// **IMPORTANT**: this type is not used *yet* in current LDtk version. It's only presented
+    /// here as a preview of a planned feature.  A World contains multiple levels, and it has its
+    /// own layout settings.
     /// </summary>
     public partial class World
     {
@@ -2216,17 +2027,17 @@ namespace ldtk
     public enum When { AfterLoad, AfterSave, BeforeSave, Manual };
 
     /// <summary>
-    /// Possible values: `Any`, `OnlySame`, `OnlyTags`, `OnlySpecificEntity`
+    /// Possible values: `Any`, `OnlySame`, `OnlyTags`
     /// </summary>
-    public enum AllowedRefs { Any, OnlySame, OnlySpecificEntity, OnlyTags };
+    public enum AllowedRefs { Any, OnlySame, OnlyTags };
 
     /// <summary>
-    /// Possible values: `Hidden`, `ValueOnly`, `NameAndValue`, `EntityTile`, `LevelTile`,
-    /// `Points`, `PointStar`, `PointPath`, `PointPathLoop`, `RadiusPx`, `RadiusGrid`,
+    /// Possible values: `Hidden`, `ValueOnly`, `NameAndValue`, `EntityTile`, `Points`,
+    /// `PointStar`, `PointPath`, `PointPathLoop`, `RadiusPx`, `RadiusGrid`,
     /// `ArrayCountWithLabel`, `ArrayCountNoLabel`, `RefLinkBetweenPivots`,
     /// `RefLinkBetweenCenters`
     /// </summary>
-    public enum EditorDisplayMode { ArrayCountNoLabel, ArrayCountWithLabel, EntityTile, Hidden, LevelTile, NameAndValue, PointPath, PointPathLoop, PointStar, Points, RadiusGrid, RadiusPx, RefLinkBetweenCenters, RefLinkBetweenPivots, ValueOnly };
+    public enum EditorDisplayMode { ArrayCountNoLabel, ArrayCountWithLabel, EntityTile, Hidden, NameAndValue, PointPath, PointPathLoop, PointStar, Points, RadiusGrid, RadiusPx, RefLinkBetweenCenters, RefLinkBetweenPivots, ValueOnly };
 
     /// <summary>
     /// Possible values: `Above`, `Center`, `Beneath`
@@ -2283,7 +2094,7 @@ namespace ldtk
 
     public enum Flag { DiscardPreCsvIntGrid, ExportPreCsvIntGridFormat, IgnoreBackupSuggest, MultiWorlds, PrependIndexToLevelFileNames, UseMultilinesType };
 
-    public enum BgPos { Contain, Cover, CoverDirty, Repeat, Unscaled };
+    public enum BgPos { Contain, Cover, CoverDirty, Unscaled };
 
     public enum WorldLayout { Free, GridVania, LinearHorizontal, LinearVertical };
 
@@ -2493,8 +2304,6 @@ namespace ldtk
                     return AllowedRefs.Any;
                 case "OnlySame":
                     return AllowedRefs.OnlySame;
-                case "OnlySpecificEntity":
-                    return AllowedRefs.OnlySpecificEntity;
                 case "OnlyTags":
                     return AllowedRefs.OnlyTags;
             }
@@ -2516,9 +2325,6 @@ namespace ldtk
                     return;
                 case AllowedRefs.OnlySame:
                     serializer.Serialize(writer, "OnlySame");
-                    return;
-                case AllowedRefs.OnlySpecificEntity:
-                    serializer.Serialize(writer, "OnlySpecificEntity");
                     return;
                 case AllowedRefs.OnlyTags:
                     serializer.Serialize(writer, "OnlyTags");
@@ -2548,8 +2354,6 @@ namespace ldtk
                     return EditorDisplayMode.EntityTile;
                 case "Hidden":
                     return EditorDisplayMode.Hidden;
-                case "LevelTile":
-                    return EditorDisplayMode.LevelTile;
                 case "NameAndValue":
                     return EditorDisplayMode.NameAndValue;
                 case "PointPath":
@@ -2595,9 +2399,6 @@ namespace ldtk
                     return;
                 case EditorDisplayMode.Hidden:
                     serializer.Serialize(writer, "Hidden");
-                    return;
-                case EditorDisplayMode.LevelTile:
-                    serializer.Serialize(writer, "LevelTile");
                     return;
                 case EditorDisplayMode.NameAndValue:
                     serializer.Serialize(writer, "NameAndValue");
@@ -3129,8 +2930,6 @@ namespace ldtk
                     return BgPos.Cover;
                 case "CoverDirty":
                     return BgPos.CoverDirty;
-                case "Repeat":
-                    return BgPos.Repeat;
                 case "Unscaled":
                     return BgPos.Unscaled;
             }
@@ -3155,9 +2954,6 @@ namespace ldtk
                     return;
                 case BgPos.CoverDirty:
                     serializer.Serialize(writer, "CoverDirty");
-                    return;
-                case BgPos.Repeat:
-                    serializer.Serialize(writer, "Repeat");
                     return;
                 case BgPos.Unscaled:
                     serializer.Serialize(writer, "Unscaled");

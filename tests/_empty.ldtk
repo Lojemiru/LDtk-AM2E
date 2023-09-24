@@ -5,15 +5,14 @@
 		"doc": "https://ldtk.io/json",
 		"schema": "https://ldtk.io/files/JSON_SCHEMA.json",
 		"appAuthor": "Sebastien 'deepnight' Benard",
-		"appVersion": "1.4.0",
+		"appVersion": "1.2.4",
 		"url": "https://ldtk.io"
 	},
 	"iid": "9bba3440-7820-11ed-bc60-dd3cf5379687",
-	"jsonVersion": "1.4.0",
-	"appBuildId": 470896,
+	"jsonVersion": "1.2.4",
+	"appBuildId": 464799,
 	"nextUid": 1,
 	"identifierStyle": "Capitalize",
-	"toc": [],
 	"worldLayout": "Free",
 	"worldGridWidth": 256,
 	"worldGridHeight": 256,
@@ -22,8 +21,6 @@
 	"defaultPivotX": 0,
 	"defaultPivotY": 0,
 	"defaultGridSize": 16,
-	"defaultEntityWidth": 16,
-	"defaultEntityHeight": 16,
 	"bgColor": "#40465B",
 	"defaultLevelBgColor": "#696A79",
 	"minifyJson": false,
@@ -35,7 +32,6 @@
 	"pngFilePattern": null,
 	"backupOnSave": false,
 	"backupLimit": 10,
-	"backupRelPath": null,
 	"levelNamePattern": "%world_Level_%idx",
 	"tutorialDesc": null,
 	"customCommands": [],
@@ -66,6 +62,5 @@
 			"__neighbours": []
 		}
 	],
-	"worlds": [],
-	"dummyWorldIid": "559cd230-c640-11ed-ac88-0dedae0cc2d8"
+	"worlds": []
 }

@@ -11,7 +11,6 @@ class AutoLayerRuleDef {
 	public var breakOnMatch = true;
 	public var size(default,null): Int;
 	var pattern : Array<Int> = [];
-	public var alpha = 1.;
 	public var outOfBoundsValue : Null<Int>;
 	public var flipX = false;
 	public var flipY = false;
@@ -23,12 +22,6 @@ class AutoLayerRuleDef {
 	public var yModulo = 1;
 	public var xOffset = 0;
 	public var yOffset = 0;
-	public var tileXOffset = 0;
-	public var tileYOffset = 0;
-	public var tileRandomXMin = 0;
-	public var tileRandomXMax = 0;
-	public var tileRandomYMin = 0;
-	public var tileRandomYMax = 0;
 	public var checker : ldtk.Json.AutoLayerRuleCheckerMode = None;
 
 	var perlinActive = false;
@@ -45,10 +38,6 @@ class AutoLayerRuleDef {
 		this.size = size;
 		perlinSeed = Std.random(9999999);
 		initPattern();
-	}
-
-	public inline function hasAnyPositionOffset() {
-		return tileRandomXMin!=0 || tileRandomXMax!=0 || tileRandomYMin!=0 || tileRandomYMax!=0 || tileXOffset!=0 || tileYOffset!=0;
 	}
 
 	inline function isValidSize(size:Int) {
@@ -122,15 +111,14 @@ class AutoLayerRuleDef {
 		return 'Rule#$uid(${size}x$size)';
 	}
 
-	public function toJson(ld:LayerDef) : ldtk.Json.AutoRuleDef {
-		tidy(ld);
+	public function toJson() : ldtk.Json.AutoRuleDef {
+		tidy();
 
 		return {
 			uid: uid,
 			active: active,
 			size: size,
 			tileIds: tileIds.copy(),
-			alpha: alpha,
 			chance: JsonTools.writeFloat(chance),
 			breakOnMatch: breakOnMatch,
 			pattern: pattern.copy(), // WARNING: could leak to undo/redo leaks if (one day) pattern contained objects
@@ -140,12 +128,6 @@ class AutoLayerRuleDef {
 			yModulo: yModulo,
 			xOffset: xOffset,
 			yOffset: yOffset,
-			tileXOffset: tileXOffset,
-			tileYOffset: tileYOffset,
-			tileRandomXMin: tileRandomXMin,
-			tileRandomXMax: tileRandomXMax,
-			tileRandomYMin: tileRandomYMin,
-			tileRandomYMax: tileRandomYMax,
 			checker: JsonTools.writeEnum(checker, false),
 			tileMode: JsonTools.writeEnum(tileMode, false),
 			pivotX: JsonTools.writeFloat(pivotX),
@@ -166,7 +148,6 @@ class AutoLayerRuleDef {
 		r.breakOnMatch = JsonTools.readBool(json.breakOnMatch, false); // default to FALSE to avoid breaking old maps
 		r.chance = JsonTools.readFloat(json.chance);
 		r.pattern = json.pattern;
-		r.alpha = JsonTools.readFloat(json.alpha, 1);
 		r.outOfBoundsValue = JsonTools.readNullableInt(json.outOfBoundsValue);
 		r.flipX = JsonTools.readBool(json.flipX, false);
 		r.flipY = JsonTools.readBool(json.flipY, false);
@@ -178,12 +159,6 @@ class AutoLayerRuleDef {
 		r.yModulo = JsonTools.readInt(json.yModulo, 1);
 		r.xOffset = JsonTools.readInt(json.xOffset, 0);
 		r.yOffset = JsonTools.readInt(json.yOffset, 0);
-		r.tileXOffset = JsonTools.readInt(json.tileXOffset, 0);
-		r.tileYOffset = JsonTools.readInt(json.tileYOffset, 0);
-		r.tileRandomXMin = JsonTools.readInt(json.tileRandomXMin, 0);
-		r.tileRandomXMax = JsonTools.readInt(json.tileRandomXMax, 0);
-		r.tileRandomYMin = JsonTools.readInt(json.tileRandomYMin, 0);
-		r.tileRandomYMax = JsonTools.readInt(json.tileRandomYMax, 0);
 
 		r.perlinActive = JsonTools.readBool(json.perlinActive, false);
 		r.perlinScale = JsonTools.readFloat(json.perlinScale, 0.2);
@@ -263,13 +238,7 @@ class AutoLayerRuleDef {
 		for(px in 0...size)
 		for(py in 0...size) {
 			v = dn.M.iabs( pattern[px+py*size] );
-			if( v==0 )
-				continue;
-
-			if( v<=999 && !ld.hasIntGridValue(v) )
-				return true;
-
-			if( v>999 && v!=Const.AUTO_LAYER_ANYTHING && ld.getIntGridGroup( ld.resolveIntGridGroupUidFromRuleValue(v), false )==null )
+			if( v!=0 && v!=Const.AUTO_LAYER_ANYTHING && !ld.hasIntGridValue(v) )
 				return true;
 		}
 
@@ -287,8 +256,8 @@ class AutoLayerRuleDef {
 			return false;
 
 		// Rule check
+		// var isOutOfBounds = false;
 		var value : Null<Int> = 0;
-		var valueInf : Null<data.DataTypes.IntGridValueDefEditor> = null;
 		var radius = Std.int( size/2 );
 		for(px in 0...size)
 		for(py in 0...size) {
@@ -296,12 +265,15 @@ class AutoLayerRuleDef {
 			if( pattern[coordId]==0 )
 				continue;
 
+			// isOutOfBounds = !source.isValid( cx+dirX*(px-radius), cy+dirY*(py-radius) );
 			value = source.isValid( cx+dirX*(px-radius), cy+dirY*(py-radius) )
 				? source.getIntGrid( cx+dirX*(px-radius), cy+dirY*(py-radius) )
 				: outOfBoundsValue;
 
 			if( value==null )
 				return false;
+			// if( !source.isValid(cx+dirX*(px-radius), cy+dirY*(py-radius)) )
+			// 	return false;
 
 			if( dn.M.iabs( pattern[coordId] ) == Const.AUTO_LAYER_ANYTHING ) {
 				// "Anything" checks
@@ -309,15 +281,6 @@ class AutoLayerRuleDef {
 					return false;
 
 				if( pattern[coordId]<0 && value!=0 )
-					return false;
-			}
-			else if( dn.M.iabs( pattern[coordId] ) > 999 ) {
-				// Group checks
-				valueInf = source.def.getIntGridValueDef(value);
-				if( pattern[coordId]>0 && ( valueInf==null || valueInf.groupUid != Std.int(pattern[coordId]/1000)-1 ) )
-					return false;
-
-				if( pattern[coordId]<0 && ( valueInf!=null && valueInf.groupUid == Std.int(-pattern[coordId]/1000)-1 ) )
 					return false;
 			}
 			else {
@@ -332,7 +295,7 @@ class AutoLayerRuleDef {
 		return true;
 	}
 
-	public function tidy(ld:LayerDef) {
+	public function tidy() {
 		var anyFix = false;
 
 		if( flipX && isSymetricX() ) {
@@ -353,48 +316,14 @@ class AutoLayerRuleDef {
 			anyFix = true;
 		}
 
-		if( xModulo==1 && checker==Horizontal ) {
-			App.LOG.add("tidy", 'Fixed checker mode of Rule#$uid');
-			checker = yModulo>1 ? Vertical : None;
-			anyFix = true;
-		}
-
-		if( yModulo==1 && checker==Vertical ) {
-			App.LOG.add("tidy", 'Fixed checker mode of Rule#$uid');
-			checker = xModulo>1 ? Horizontal : None;
-			anyFix = true;
-		}
-
-		var sourceLd = ld.autoSourceLd!=null ? ld.autoSourceLd : ld;
-		if( outOfBoundsValue!=null && !sourceLd.hasIntGridValue(outOfBoundsValue) ) {
-			App.LOG.add("tidy", 'Fixed lost outOfBoundsValue: $outOfBoundsValue');
-			outOfBoundsValue = null;
-		}
-
 		if( trim() )
 			anyFix = true;
 
 		return anyFix;
 	}
 
-	public function getRandomTileForCoord(seed:Int, cx:Int,cy:Int, flips:Int) : Int {
-		return tileIds[ dn.M.randSeedCoords( uid+seed+flips, cx,cy, tileIds.length ) ];
-	}
-
-	public function getXOffsetForCoord(seed:Int, cx:Int,cy:Int, flips:Int) : Int {
-		return ( M.hasBit(flips,0)?-1:1 ) * ( tileXOffset + (
-			tileRandomXMin==0 && tileRandomXMax==0
-				? 0
-				: dn.M.randSeedCoords( uid+seed+flips, cx,cy, (tileRandomXMax-tileRandomXMin+1) ) + tileRandomXMin
-		));
-	}
-
-	public function getYOffsetForCoord(seed:Int, cx:Int,cy:Int, flips:Int) : Int {
-		return ( M.hasBit(flips,1)?-1:1 ) * ( tileYOffset + (
-			tileRandomYMin==0 && tileRandomYMax==0
-				? 0
-				: dn.M.randSeedCoords( uid+seed+1, cx,cy, (tileRandomYMax-tileRandomYMin+1) ) + tileRandomYMin
-		));
+	public function getRandomTileForCoord(seed:Int, cx:Int,cy:Int) : Int {
+		return tileIds[ dn.M.randSeedCoords( seed, cx,cy, tileIds.length ) ];
 	}
 
 	#end

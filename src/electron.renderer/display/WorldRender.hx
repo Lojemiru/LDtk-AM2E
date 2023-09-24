@@ -137,12 +137,11 @@ class WorldRender extends dn.Process {
 					removeWorldLevel(wl.uid);
 				invalidateAll();
 
-			case ViewportChanged(zoomChanged):
+			case ViewportChanged:
 				root.setScale( camera.adjustedZoom );
 				root.x = M.round( camera.width*0.5 - camera.worldX * camera.adjustedZoom );
 				root.y = M.round( camera.height*0.5 - camera.worldY * camera.adjustedZoom );
-				if( zoomChanged )
-					renderGrids();
+				renderGrids();
 				updateBgColor();
 				updateAxesPos();
 				updateAllLevelIdentifiers(false);
@@ -150,8 +149,7 @@ class WorldRender extends dn.Process {
 				updateFieldsPos();
 				invalidateCameraBasedRenders();
 				for(l in curWorld.levels) {
-					if( zoomChanged )
-						getWorldLevel(l).boundsInvalidated = true;
+					getWorldLevel(l).boundsInvalidated = true;
 					updateLevelVisibility(l);
 				}
 
@@ -196,8 +194,6 @@ class WorldRender extends dn.Process {
 			case EntityFieldInstanceChanged(ei,fi):
 
 			case LevelFieldInstanceChanged(l,fi):
-				if( fi.def.type==F_Tile )
-					invalidateLevelRender(l);
 				invalidateLevelFields(l);
 
 			case FieldDefRemoved(fd):
@@ -205,8 +201,6 @@ class WorldRender extends dn.Process {
 
 			case FieldDefChanged(fd):
 				invalidateAllLevelFields();
-				if( fd.type==F_Tile && project.defs.isLevelField(fd) )
-					invalidateAllLevelRenders();
 
 			case FieldDefSorted:
 				invalidateAllLevelFields();
@@ -458,7 +452,7 @@ class WorldRender extends dn.Process {
 		if( title.visible ) {
 			var b = curWorld.getWorldBounds();
 			var w = b.right-b.left;
-			var t = project.hasFlag(MultiWorlds) ? curWorld.identifier : project.filePath.fileName;
+			var t = project.filePath.fileName;
 			title.textColor = C.toWhite(project.bgColor, 0.3);
 			title.text = t;
 			title.setScale( camera.adjustedZoom * M.fmin(8, (w/title.textWidth) * 2) );
@@ -484,7 +478,7 @@ class WorldRender extends dn.Process {
 			}
 			wl.fieldsRender.visible = editor.worldMode || editor.curLevel==l;
 			if( editor.worldMode ) {
-				wl.fieldsRender.alpha = getAlphaFromZoom(minZoom*0.5);
+				wl.fieldsRender.alpha = getAlphaFromZoom(minZoom);
 				if( wl.fieldsRender.alpha<=0 )
 					wl.fieldsRender.visible = false;
 			}
@@ -748,6 +742,8 @@ class WorldRender extends dn.Process {
 				f.layout = Vertical;
 				f;
 			}
+		else
+			wl.fieldsRender.removeChildren();
 
 		// Attach custom fields
 		FieldInstanceRender.renderFields(
@@ -790,10 +786,9 @@ class WorldRender extends dn.Process {
 			return doneCoords.exists(li.def.gridSize) && doneCoords.get(li.def.gridSize).exists( li.coordId(cx,cy) );
 		}
 
-		// Default layers renders
-		var alphaThreshold = 0.6;
+		// Render layers
 		for( li in l.layerInstances ) {
-			if( li.def.type==Entities || !li.def.renderInWorldView )
+			if( li.def.type==Entities )
 				continue;
 
 			if( li.def.isAutoLayer() && li.autoTilesCache==null )
@@ -806,7 +801,7 @@ class WorldRender extends dn.Process {
 					var pixelGrid = new dn.heaps.PixelGrid(li.def.gridSize, li.cWid, li.cHei, wl.render);
 					pixelGrid.x = li.pxTotalOffsetX;
 					pixelGrid.y = li.pxTotalOffsetY;
-					var c : dn.Col = 0x0;
+					var c = 0x0;
 					var cx = 0;
 					var cy = 0;
 					li.def.iterateActiveRulesInDisplayOrder( li, (r)->{
@@ -817,10 +812,9 @@ class WorldRender extends dn.Process {
 								cy = Std.int( tileInfos.y / li.def.gridSize );
 								if( !isCoordDone(li,cx,cy) ) {
 									c = td.getAverageTileColor(tileInfos.tid);
-									if( c.af>=alphaThreshold ) {
+									// if( C.getA(c)>=1 )
 										markCoordAsDone(li,cx,cy);
-										pixelGrid.setPixel24(cx,cy, c);
-									}
+									pixelGrid.setPixel24(cx,cy, c);
 								}
 							}
 						}
@@ -847,25 +841,17 @@ class WorldRender extends dn.Process {
 					var pixelGrid = new dn.heaps.PixelGrid(li.def.gridSize, li.cWid, li.cHei, wl.render);
 					pixelGrid.x = li.pxTotalOffsetX;
 					pixelGrid.y = li.pxTotalOffsetY;
-					var c : dn.Col = 0x0;
+					var c = 0x0;
 					for(cy in 0...li.cHei)
 					for(cx in 0...li.cWid)
 						if( !isCoordDone(li,cx,cy) && li.hasAnyGridTile(cx,cy) ) {
 							c = td.getAverageTileColor( li.getTopMostGridTile(cx,cy).tileId );
-							if( c.af>=alphaThreshold ) {
+							if( C.getA(c)>=1 )
 								markCoordAsDone(li, cx,cy);
-								pixelGrid.setPixel(cx,cy, c.withoutAlpha());
-							}
+							pixelGrid.setPixel24(cx,cy, c);
 						}
 				}
 			}
-		}
-
-		// Custom tile render override
-		var t = l.getWorldTileFromFields();
-		if( t!=null ) {
-			var bmp = new h2d.Bitmap(t, wl.render);
-			bmp.setScale( dn.heaps.Scaler.bestFit_f(t.width,t.height, l.pxWid,l.pxHei) );
 		}
 
 		updateLevelBounds(l);
@@ -884,22 +870,25 @@ class WorldRender extends dn.Process {
 			if( !settings.v.showDetails )
 				return;
 
-			var thick = (l==editor.curLevel?3:2)*camera.pixelRatio / camera.adjustedZoom;
-			var c : dn.Col = l.getSmartColor(false);
+			var thick = 1*camera.pixelRatio / camera.adjustedZoom;
+			var c = l==editor.curLevel ? 0xffffff :  C.toWhite(l.getBgColor(),0.7);
 
 			var error = l.getFirstError();
 			if( error!=NoError ) {
 				thick*=4;
 				c = 0xff0000;
 			}
-
-			var pad = 1;
 			wl.outline.beginFill(c);
-			wl.outline.drawRect(pad, pad, l.pxWid-pad*2, thick); // top
-			wl.outline.drawRect(pad, l.pxHei-thick-pad, l.pxWid-pad*2, thick); // bottom
-			wl.outline.drawRect(pad, pad, thick, l.pxHei-pad*2); // left
-			wl.outline.drawRect(l.pxWid-thick-pad, pad, thick, l.pxHei-pad*2); // right
-			wl.outline.endFill();
+			wl.outline.drawRect(0, 0, l.pxWid, thick); // top
+
+			wl.outline.beginFill(c);
+			wl.outline.drawRect(0, l.pxHei-thick, l.pxWid, thick); // bottom
+
+			wl.outline.beginFill(c);
+			wl.outline.drawRect(0, 0, thick, l.pxHei); // left
+
+			wl.outline.beginFill(c);
+			wl.outline.drawRect(l.pxWid-thick, 0, thick, l.pxHei); // right
 		}
 	}
 
@@ -912,7 +901,9 @@ class WorldRender extends dn.Process {
 			wl.identifier.removeChildren();
 			var tf = new h2d.Text(Assets.getRegularFont(), wl.identifier);
 			tf.text = l.getDisplayIdentifier();
-			tf.textColor = l.getSmartColor(false).toWhite(0.5);
+			tf.textColor = 0xffffff;
+			if( l.useAutoIdentifier )
+				tf.alpha = 0.33;
 			tf.x = 6;
 			tf.y = -2;
 
@@ -979,7 +970,7 @@ class WorldRender extends dn.Process {
 		}
 
 		// Color
-		wl.identifier.color.setColor( l.getSmartColor(false).toBlack(0.3).withAlpha(l.useAutoIdentifier ? 0.4 : 1) );
+		wl.identifier.color.setColor( C.addAlphaF( C.toBlack( l.getSmartColor(false), 0.6 ) ) );
 	}
 
 

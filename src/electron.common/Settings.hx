@@ -6,8 +6,9 @@ import EditorTypes;
 typedef AppSettings = {
 	var lastKnownVersion: Null<String>;
 
-	var zenMode : Bool;
+	var compactMode : Bool;
 	var grid : Bool;
+	var singleLayerMode : Bool;
 	var emptySpaceSelection : Bool;
 	var tileStacking : Bool;
 	var tileEnumOverlays : Bool;
@@ -16,14 +17,10 @@ typedef AppSettings = {
 	var startFullScreen: Bool;
 	var autoInstallUpdates : Bool;
 	var colorBlind : Bool;
-	var blurMask : Bool;
 	var navigationKeys : NavigationKeys;
 
 	var openLastProject : Bool;
 	var lastProject : Null<{ filePath:String, levelUid:Int }>;
-
-	var singleLayerMode : Bool;
-	var singleLayerModeIntensity : Float;
 
 	var appUiScale : Float;
 	var editorUiScale : Float;
@@ -33,7 +30,6 @@ typedef AppSettings = {
 
 	var recentProjects : Array<String>;
 	var recentDirs : Array<String>;
-	var recentDirColors : Array<{ path:String, col:String }>;
 
 	var uiStates : Array<{ id:String, val:Int }>;
 	var lastUiDirs : Array<{ ?project:String, uiId:String, path:String }>;
@@ -43,9 +39,6 @@ typedef AppSettings = {
 enum abstract UiState(String) {
 	var ShowProjectColors;
 	var HideSamplesOnHome;
-	var RuleValuesColumns;
-	var IntGridPaletteColumns;
-	var EntityPaletteColumns;
 }
 
 /* Notes: Settings related enums are stored in this file instead of EditorTypes to avoid Main compilation to reach unwanted classes, by importing EditorTypes. */
@@ -75,7 +68,7 @@ class Settings {
 
 	public function new() {
 		// Init storage
-		ls = dn.data.LocalStorage.getJsonStorage("settings", Compact);
+		ls = dn.data.LocalStorage.createJsonStorage("settings", Full);
 		ls.setStorageFileDir( getDir() );
 
 		// Init defaults
@@ -83,11 +76,10 @@ class Settings {
 			lastKnownVersion: null,
 			recentProjects: [],
 			recentDirs: null,
-			recentDirColors: [],
 
-			zenMode: false,
+			compactMode: false,
 			grid: true,
-
+			singleLayerMode: false,
 			emptySpaceSelection: true,
 			tileStacking: true,
 			tileEnumOverlays : false,
@@ -96,11 +88,7 @@ class Settings {
 			startFullScreen: false,
 			autoInstallUpdates: true,
 			colorBlind: false,
-			blurMask: true,
 			navigationKeys: null,
-
-			singleLayerMode: false,
-			singleLayerModeIntensity: 0.75,
 
 			openLastProject: false,
 			lastProject: null,
@@ -149,7 +137,9 @@ class Settings {
 		}
 		#end
 
-		initDefaultGlobalUiState(ShowProjectColors, 1);
+
+		if( !hasUiState(ShowProjectColors) )
+			setUiStateBool(ShowProjectColors, true);
 	}
 
 
@@ -186,19 +176,6 @@ class Settings {
 		return false;
 	}
 
-
-	function initDefaultGlobalUiState(id:UiState, defValue:Int) {
-		for(s in v.uiStates)
-			if( s.id==Std.string(id) )
-				return false;
-		v.uiStates.push({
-			id: Std.string(id),
-			val: defValue,
-		});
-		return true;
-	}
-
-	#if editor
 	public function wasProjectTrustAsked(projectIid:String) {
 		for(tp in v.projectTrusts)
 			if( tp.iid==projectIid )
@@ -207,71 +184,58 @@ class Settings {
 	}
 
 
-	function getOrCreateUiState(id:UiState, ?forProject:data.Project) {
-		var idStr = makeProjectUiStateId(id, forProject);
+	function getOrCreateUiState(id:UiState) {
 		for(s in v.uiStates)
-			if( s.id == idStr )
+			if( s.id==Std.string(id) )
 				return s;
-		v.uiStates.push({ id:idStr, val:0 });
+		v.uiStates.push({ id:Std.string(id), val:0 });
 		return v.uiStates[v.uiStates.length-1];
 	}
 
-	inline function makeProjectUiStateId(id:UiState, forProject:Null<data.Project>) : String {
-		return forProject==null
-			? Std.string(id)
-			: forProject.iid+"_"+Std.string(id);
-	}
-
-	public function hasUiState(id:UiState, ?forProject:data.Project) {
+	public function hasUiState(id:UiState) {
 		for(s in v.uiStates)
-			if( s.id==makeProjectUiStateId(id,forProject) )
+			if( s.id==Std.string(id) )
 				return true;
 		return false;
 	}
 
-	public function deleteUiState(id:UiState, ?forProject:data.Project) {
+	function deleteUiState(id:UiState) {
 		var i = 0;
 		while( i<v.uiStates.length )
-			if( v.uiStates[i].id == makeProjectUiStateId(id,forProject) )
+			if( v.uiStates[i].id==Std.string(id) )
 				v.uiStates.splice(i,1);
 			else
 				i++;
+	}
+
+	public inline function setUiStateInt(id:UiState, v:Int) {
+		getOrCreateUiState(id).val = v;
 		save();
 	}
 
-	public inline function setUiStateInt(id:UiState, v:Int, ?forProject:data.Project) {
-		getOrCreateUiState(id,forProject).val = v;
+	public inline function setUiStateBool(id:UiState, v:Bool) {
+		setUiStateInt(id, v==true ? 1 : 0);
 		save();
 	}
 
-	public inline function setUiStateBool(id:UiState, v:Bool, ?forProject:data.Project) {
-		setUiStateInt(id, v==true ? 1 : 0, forProject);
+	public inline function toggleUiStateBool(id:UiState) {
+		setUiStateBool(id, !getUiStateBool(id));
 		save();
 	}
 
-	public inline function toggleUiStateBool(id:UiState, ?forProject:data.Project) {
-		setUiStateBool(id, !getUiStateBool(id,forProject), forProject);
-		save();
-	}
-
-	public inline function makeStateId(baseId:UiState, extra:Dynamic) : UiState {
-		return cast baseId+"_"+Std.string(extra);
-	}
-
-	public function getUiStateInt(id:UiState, ?forProject:data.Project, def=0) : Int {
+	public function getUiStateInt(id:UiState) : Int {
 		for(s in v.uiStates)
-			if( s.id == makeProjectUiStateId(id,forProject) )
+			if( s.id==Std.string(id) )
 				return s.val;
-		return def;
+		return 0;
 	}
 
-	public function getUiStateBool(id:UiState, ?forProject:data.Project) : Bool {
+	public function getUiStateBool(id:UiState) : Bool {
 		for(s in v.uiStates)
-			if( s.id == makeProjectUiStateId(id,forProject) )
+			if( s.id==Std.string(id) )
 				return s.val!=0;
 		return false;
 	}
-	#end
 
 
 	#if editor

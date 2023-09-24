@@ -2,60 +2,18 @@ package ui.palette;
 
 class EntityPalette extends ui.ToolPalette {
 	var allTagGroups: Array<{ tag:Null<String>, all:Array<data.def.EntityDef> }>;
-	var searchMemory : Null<String>;
-	var search : QuickSearch;
 
 	public function new(t) {
 		super(t);
-		jContent.addClass("entities");
 	}
 
 	override function doRender() {
 		super.doRender();
 
-		jContent.empty();
-
 		var tool : tool.lt.EntityTool = cast tool;
 
 		jList = new J('<ul class="niceList"/>');
 		jList.appendTo(jContent);
-
-		var jTopBar = new J('<div class="bar"/>');
-		jTopBar.prependTo(jContent);
-
-		search = new ui.QuickSearch(jList);
-		search.jWrapper.appendTo(jTopBar);
-
-
-		// View select
-		var stateId = App.ME.settings.makeStateId(EntityPaletteColumns, editor.curLayerDef.uid);
-		var columns = App.ME.settings.getUiStateInt(stateId, project, 1);
-		JsTools.removeClassReg(jList, ~/col-[0-9]+/g);
-		jList.addClass("col-"+columns);
-		var jMode = new J('<button class="transparent displayMode"> <span class="icon gridView"></span> </button>');
-		jMode.appendTo(jTopBar);
-		jMode.off().click(_->{
-			var m = new ui.modal.ContextMenu(jMode);
-			m.add({
-				label:L.t._("List"),
-				icon: "listView",
-				cb: ()->{
-					App.ME.settings.deleteUiState(stateId, project);
-					doRender();
-				}
-			});
-			for(n in [2,3,4,5]) {
-				m.add({
-					label:L.t._("::n:: columns", {n:n}),
-					icon: "gridView",
-					cb: ()->{
-						App.ME.settings.setUiStateInt(stateId, n, project);
-						doRender();
-					}
-				});
-			}
-		});
-
 
 		var ld = Editor.ME.curLayerDef;
 		allTagGroups = project.defs.groupUsingTags(
@@ -69,11 +27,9 @@ class EntityPalette extends ui.ToolPalette {
 		for(group in allTagGroups) {
 			// Tag header
 			if( allTagGroups.length>1 && group.all.length>0 ) {
-				var jTag = new J('<li class="title collapser"/>');
+				var jTag = new J('<li class="title"/>');
 				jTag.appendTo(jList);
 				jTag.text( group.tag==null ? L._Untagged() : group.tag );
-				jTag.attr("id", project.iid+"_entityPalette_"+ld.uid+"_tag_"+group.tag);
-				jTag.attr("default", "open");
 			}
 
 			var jLi = new J('<li class="subList"> <ul/> </li>');
@@ -88,7 +44,6 @@ class EntityPalette extends ui.ToolPalette {
 				jLi.attr("data-y", Std.string(y));
 				jLi.addClass("entity");
 				jLi.css( "border-color", C.intToHex(ed.color) );
-				jLi.css("background-color", dn.Col.fromInt(ed.color).toCssRgba(0.4));
 
 				if( ed.doc!=null ) {
 					jLi.attr("tip", "right");
@@ -106,42 +61,18 @@ class EntityPalette extends ui.ToolPalette {
 				}
 
 				// Preview and label
-				var jPreview = JsTools.createEntityPreview(Editor.ME.project, ed);
-				jPreview.addClass("notCompact");
-				jLi.append(jPreview);
-				jLi.append('<span class="name">${ed.identifier}</span>');
+				jLi.append( JsTools.createEntityPreview(Editor.ME.project, ed) );
+				jLi.append(ed.identifier);
 
-				jLi.mousedown( function(_) {
-					if( Editor.ME.isPaused() )
-						return;
+				jLi.click( function(_) {
 					tool.selectValue(ed.uid);
 					render();
 				});
-
-				var actions : Array<ui.modal.ContextMenu.ContextAction> = [
-					{
-						 label: L.t._("Edit entity definition"),
-						 cb: ()->new ui.modal.panel.EditEntityDefs(ed),
-					},
-				];
-				ui.modal.ContextMenu.addTo(jLi, false, actions);
-
 				y++;
 			}
 
 			groupIdx++;
 		}
-
-		JsTools.parseComponents(jList);
-
-		if( searchMemory!=null )
-			search.run(searchMemory);
-		search.onSearch = (s)->searchMemory = s;
-	}
-
-	override function onHide() {
-		super.onHide();
-		search.clear();
 	}
 
 
@@ -169,24 +100,24 @@ class EntityPalette extends ui.ToolPalette {
 		if( dy!=0 ) {
 			// Prev/next item
 			selY+=dy;
-			jContent.find('[data-y=$selY]').mousedown();
+			jContent.find('[data-y=$selY]').click();
 			focusOnSelection(true);
 		}
 		else if( dx!=0 ) {
 			// Prev/next tag group
 			if( dx<0 && !jContent.find("li.active").is('[data-groupIdx=$groupIdx] li:first') ) {
-				jContent.find('[data-groupIdx=$groupIdx] li:first').mousedown();
+				jContent.find('[data-groupIdx=$groupIdx] li:first').click();
 				focusOnSelection(true);
 				return true;
 			}
 			else if( dx>0 && groupIdx==allTagGroups.length-1 ) {
-				jContent.find('[data-groupIdx=$groupIdx] li:last').mousedown();
+				jContent.find('[data-groupIdx=$groupIdx] li:last').click();
 				focusOnSelection(true);
 				return true;
 			}
 			else {
 				groupIdx+=dx;
-				jContent.find('[data-groupIdx=$groupIdx] li:first').mousedown();
+				jContent.find('[data-groupIdx=$groupIdx] li:first').click();
 				focusOnSelection(true);
 				return true;
 			}

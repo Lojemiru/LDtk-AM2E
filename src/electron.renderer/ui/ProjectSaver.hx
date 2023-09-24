@@ -20,8 +20,8 @@ private enum SavingState {
 }
 
 typedef BackupInfos = {
-	var projectId: String;
 	var backup: dn.FilePath;
+	var project: dn.FilePath;
 	var date: Date;
 	var crash: Bool;
 }
@@ -584,6 +584,10 @@ class ProjectSaver extends dn.Process {
 		}
 	}
 
+	public inline static function makeBackupDirName(?suffix:String) {
+		return "backup_" + DateTools.format(Date.now(), "%Y-%m-%d_%H-%M-%S") + (suffix==null?"":"_"+suffix);
+	}
+
 	function backupProjectFiles(p:data.Project, onComplete:Void->Void) {
 		if( !NT.fileExists(p.filePath.full) ) {
 			onComplete();
@@ -592,7 +596,7 @@ class ProjectSaver extends dn.Process {
 
 		var subProjectDir = p.getAbsExternalFilesDir();
 		var sourceDir = dn.FilePath.fromDir( p.filePath.directoryWithSlash );
-		var backupDir = dn.FilePath.fromDir( p.getAbsBackupDir() + "/" + p.makeBackupDirName() );
+		var backupDir = dn.FilePath.fromDir( subProjectDir + "/" + Const.BACKUP_DIR + "/" + makeBackupDirName() );
 		log('Backing up $sourceDir to $backupDir...');
 
 		// List potential external levels
@@ -632,7 +636,7 @@ class ProjectSaver extends dn.Process {
 		ops.push({
 			label: "Removing older backups",
 			cb: ()->{
-				var all = listBackupFiles(p.getBackupId(), p.getAbsBackupDir());
+				var all = listBackupFiles(p.filePath.full);
 				while( all.length>p.backupLimit ) {
 					var b = all.pop();
 					try {
@@ -716,24 +720,50 @@ class ProjectSaver extends dn.Process {
 
 	/* BACKUP FILE MANAGEMENT *****************************************************/
 
+	public static function makeBackupFilePath(project:data.Project, ?extraSuffix:String) {
+		var fp = project.filePath.clone();
+
+		// Start from original project file to avoid "backups of backups" issue
+		if( project.isBackup() ) {
+			fp = makeOriginalPathFromBackup(fp.full);
+			if( fp==null )
+				return null;
+		}
+
+		// Create backup file path
+		fp.appendDirectory(fp.fileName);
+		fp.appendDirectory("backups");
+		fp.fileName +=
+			"___" + DateTools.format(Date.now(), "%Y-%m-%d__%H-%M-%S")
+			+ ( extraSuffix==null ? "" : "__" + extraSuffix )
+			+ Const.BACKUP_NAME_SUFFIX;
+
+		return fp;
+	}
+
 	public static function extractBackupInfosFromFileName(backupAbsPath:String) : Null<BackupInfos> {
 		var fp = dn.FilePath.fromFile(backupAbsPath);
-		var backupDirReg = ~/(.*?)_([0-9]{4}-[0-9]{2}-[0-9]{2})_([0-9]{2}-[0-9]{2}-[0-9]{2})(_crash|)/gi;
+		var backupDirReg = ~/backup_([0-9]{4}-[0-9]{2}-[0-9]{2})_([0-9]{2}-[0-9]{2}-[0-9]{2})(_crash|)/gi;
 		if( fp.getLastDirectory()==null || !backupDirReg.match(fp.getLastDirectory()) )
 			return null;
 		else {
-			var date = Date.fromString( backupDirReg.matched(2)+" "+StringTools.replace(backupDirReg.matched(3),"-",":") );
+			var date = Date.fromString( backupDirReg.matched(1)+" "+StringTools.replace(backupDirReg.matched(2),"-",":") );
+			var original = fp.clone();
+			original.removeLastDirectory();
+			original.removeLastDirectory();
+			original.removeLastDirectory();
 			return {
-				projectId: backupDirReg.matched(1),
+				project: original,
 				backup: fp,
-				crash: backupDirReg.matched(4)!="",
+				crash: backupDirReg.matched(3)!="",
 				date: date,
 			}
 		}
 	}
 
 	public static inline function isBackupFile(filePath:String) {
-		return extractBackupInfosFromFileName(filePath) != null;
+		var inf = extractBackupInfosFromFileName(filePath);
+		return inf!=null;
 	}
 
 	public static inline function isCrashFile(backupAbsPath:String) {
@@ -741,23 +771,30 @@ class ProjectSaver extends dn.Process {
 		return inf!=null && inf.crash;
 	}
 
-	public static function hasBackupFiles(backupAbsDir:String) {
-		var fp = dn.FilePath.fromDir(backupAbsDir);
+	public static function makeOriginalPathFromBackup(backupAbsPath:String) : Null<dn.FilePath> {
+		var inf = extractBackupInfosFromFileName(backupAbsPath);
+		return inf==null ? null : inf.project;
+	}
+
+	public static function hasBackupFiles(projectFilePath:String) {
+		var fp = dn.FilePath.fromFile(projectFilePath);
+		fp.appendDirectory(fp.fileName);
+		fp.appendDirectory("backups");
+		fp.fileName = null;
+		fp.extension = null;
 		return NT.fileExists(fp.full) && NT.dirContainsAnyFile(fp.full);
 	}
 
-	public static function listBackupFiles(projectId:String, backupDirPath:String) : Array<BackupInfos> {
-		var backupFp = dn.FilePath.fromDir(backupDirPath);
-		if( !NT.fileExists(backupFp.full) )
+	public static function listBackupFiles(projectFilePath:String) : Array<BackupInfos> {
+		var fp = dn.FilePath.fromFile(projectFilePath);
+		var dir = dn.FilePath.fromDir( fp.directory+"/"+fp.fileName+"/backups" );
+		if( !NT.fileExists(dir.full) )
 			return [];
 
 		var all : Array<BackupInfos> = [];
-		for( bdir in NT.readDir(backupFp.full) ) {
-			var path = backupFp.directoryWithSlash + bdir;
+		for( bdir in NT.readDir(dir.full) ) {
+			var path = dir.full+"/"+bdir;
 			if( !NT.isDirectory(path) )
-				continue;
-
-			if( bdir.indexOf(projectId)!=0 && bdir.indexOf("backup_")!=0 )
 				continue;
 
 			for( f in NT.readDir(path) ) {

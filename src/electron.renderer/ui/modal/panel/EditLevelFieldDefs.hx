@@ -8,9 +8,9 @@ class EditLevelFieldDefs extends ui.modal.Panel {
 
 		loadTemplate("editLevelFieldDefs");
 
-		fieldForm = new FieldDefsForm( FP_Level(null) );
+		fieldForm = new FieldDefsForm(FP_Level);
 		jContent.find("#levelFields").replaceWith(fieldForm.jWrapper);
-		fieldForm.useFields( FP_Level(editor.curLevel), project.defs.levelFields );
+		fieldForm.useFields( "Level", project.defs.levelFields );
 	}
 
 	override function onClose() {
@@ -19,16 +19,13 @@ class EditLevelFieldDefs extends ui.modal.Panel {
 			new LevelInstancePanel();
 	}
 
-	public function selectField(fd:data.def.FieldDef) {
-		fieldForm.selectField(fd);
-	}
 
 	override function onGlobalEvent(ge:GlobalEvent) {
 		super.onGlobalEvent(ge);
 
 		switch ge {
 			case ProjectSelected:
-				fieldForm.useFields( FP_Level(editor.curLevel), project.defs.levelFields );
+				fieldForm.useFields( "Level", project.defs.levelFields );
 
 			case _:
 		}

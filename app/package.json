@@ -1,6 +1,6 @@
 {
 	"name": "ldtk",
-	"version": "1.4.0",
+	"version": "1.2.6",
 	"main": "assets/main.js",
 	"productName": "LDtk",
 	"author": "Sebastien Benard",
@@ -21,7 +21,7 @@
 		"qt-cs": "quicktype -s schema ../docs/JSON_SCHEMA.json -o ../docs/quicktype/LdtkJson.cs --namespace ldtk --any-type dynamic",
 		"qt-js": "quicktype -s schema ../docs/JSON_SCHEMA.json -o ../docs/quicktype/LdtkJson.js",
 		"qt-py": "quicktype -s schema ../docs/JSON_SCHEMA.json -o ../docs/quicktype/LdtkJson.py",
-		"qt-rs": "quicktype -s schema ../docs/JSON_SCHEMA.json -o ../docs/quicktype/LdtkJson.rs --derive-clone --derive-debug --visibility public",
+		"qt-rs": "quicktype -s schema ../docs/JSON_SCHEMA.json -o ../docs/quicktype/LdtkJson.rs",
 		"qt-go": "quicktype -s schema ../docs/JSON_SCHEMA.json -o ../docs/quicktype/LdtkJson.go",
 		"qt-cpp": "quicktype -s schema ../docs/JSON_SCHEMA.json -o ../docs/quicktype/LdtkJson.cpp"
 	},
@@ -31,12 +31,12 @@
 	},
 	"dependencies": {
 		"codemirror": "^5.64.0",
-		"electron-updater": "^5.3.0",
+		"electron-updater": "^4.6.1",
 		"simple-color-picker": "^1.0.5",
-		"sortablejs": "^1.15.0"
+		"sortablejs": "^1.14.0"
 	},
 	"devDependencies": {
-		"electron": "^24.1.2",
+		"electron": "^16.0.8",
 		"electron-builder": "^23.6.0"
 	}
 }

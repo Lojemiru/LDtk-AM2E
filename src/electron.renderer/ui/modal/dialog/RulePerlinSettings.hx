@@ -5,7 +5,7 @@ class RulePerlinSettings extends ui.modal.Dialog {
 	var preview : h2d.Graphics;
 	var rule : data.def.AutoLayerRuleDef;
 
-	public function new(?jTarget:js.jquery.JQuery, r:data.def.AutoLayerRuleDef) {
+	public function new(?target:js.jquery.JQuery, r:data.def.AutoLayerRuleDef) {
 		super();
 
 		rule = r;
@@ -17,7 +17,8 @@ class RulePerlinSettings extends ui.modal.Dialog {
 		preview = new h2d.Graphics();
 		editor.levelRender.root.add(preview, Const.DP_UI);
 
-		loadTemplate("rulePerlinSettings");
+		addClose();
+		loadTemplate("perlinSettings");
 		setTransparentMask();
 
 		var i = Input.linkToHtmlInput(r.perlinSeed, jContent.find("#perlinSeed"));
@@ -30,16 +31,14 @@ class RulePerlinSettings extends ui.modal.Dialog {
 
 		var i = Input.linkToHtmlInput(r.perlinScale, jContent.find("#perlinScale"));
 		i.enablePercentageMode();
-		i.enableSlider(50);
 		i.setBounds(0.01, 0.99);
 		i.onChange = onChange.bind(r);
 
 		var i = Input.linkToHtmlInput(r.perlinOctaves, jContent.find("#perlinOctaves"));
 		i.setBounds(1, 4);
-		i.enableSlider(0.2);
 		i.onChange = onChange.bind(r);
 
-		setAnchor( MA_JQuery(jTarget) );
+		positionNear(target);
 		updatePreview();
 	}
 

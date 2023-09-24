@@ -3,14 +3,13 @@ package data.def;
 import data.DataTypes;
 
 class LayerDef {
-	public var _project : Project;
+	var _project : Project;
 
 	@:allow(data.Definitions)
 	public var uid(default,null) : Int;
 	public var type : ldtk.Json.LayerType;
 	public var identifier(default,set) : String;
 	public var doc: Null<String>;
-	public var uiColor: Null<dn.Col>;
 
 	public var gridSize : Int = Project.DEFAULT_GRID_SIZE;
 	public var scaledGridSize(get,never) : Float; inline function get_scaledGridSize() return gridSize*getScale();
@@ -21,7 +20,6 @@ class LayerDef {
 	public var hideInList = false;
 	public var hideFieldsWhenInactive = false;
 	public var canSelectWhenInactive = true;
-	public var renderInWorldView = true;
 	public var pxOffsetX : Int = 0;
 	public var pxOffsetY : Int = 0;
 	public var parallaxFactorX : Float = 0.;
@@ -35,8 +33,7 @@ class LayerDef {
 
 	// IntGrid
 	@:allow(importer)
-	var intGridValues : Array<IntGridValueDefEditor> = [];
-	var intGridValuesGroups : Array<ldtk.Json.IntGridValueGroupDef> = [];
+	var intGridValues : Array<IntGridValueDef> = [];
 
 	// IntGrid/AutoLayers
 	public var autoSourceLayerDefUid : Null<Int>;
@@ -98,12 +95,10 @@ class LayerDef {
 		o.guideGridHei = JsonTools.readInt(json.guideGridHei, 0);
 		o.displayOpacity = JsonTools.readFloat(json.displayOpacity, 1);
 		o.inactiveOpacity = JsonTools.readFloat(json.inactiveOpacity, 1);
-		o.uiColor = JsonTools.readColor(json.uiColor, true);
 		// o.fadeInactive = JsonTools.readBool(json.fadeInactive, false);
 		o.hideInList = JsonTools.readBool(json.hideInList, false);
 		o.hideFieldsWhenInactive = JsonTools.readBool(json.hideFieldsWhenInactive, true);
 		o.canSelectWhenInactive = JsonTools.readBool(json.canSelectWhenInactive, true);
-		o.renderInWorldView = JsonTools.readBool(json.renderInWorldView, true);
 		o.pxOffsetX = JsonTools.readInt(json.pxOffsetX, 0);
 		o.pxOffsetY = JsonTools.readInt(json.pxOffsetY, 0);
 		o.parallaxFactorX = JsonTools.readFloat(json.parallaxFactorX, 0);
@@ -114,29 +109,17 @@ class LayerDef {
 		o.excludedTags = Tags.fromJson(json.excludedTags);
 
 		o.intGridValues = [];
-		o.intGridValuesGroups = [];
 		if( o.type==IntGrid ) {
-			// IntGrid values
-			var allValues : Array<IntGridValueDefEditor> = JsonTools.readArray(json.intGridValues);
+			var all : Array<IntGridValueDef> = JsonTools.readArray(json.intGridValues);
 			var fixedIdx = 1; // fix old projects missing intgrid "value" field
-			for( v in allValues ) {
+			for( v in all ) {
 				o.intGridValues.push({
 					value: M.isValidNumber(v.value) ? v.value : fixedIdx,
 					identifier: v.identifier,
 					color: JsonTools.readColor(v.color),
-					tile: JsonTools.readTileRect(v.tile, true),
-					groupUid: JsonTools.readInt(v.groupUid, 0),
 				});
 				fixedIdx++;
 			}
-			// Groups
-			if( json.intGridValuesGroups==null )
-				json.intGridValuesGroups = [];
-			o.intGridValuesGroups = json.intGridValuesGroups.map(g->{
-				uid: g.uid,
-				identifier: g.identifier,
-				color: g.color,
-			});
 		}
 
 		o.autoSourceLayerDefUid = JsonTools.readNullableInt(json.autoSourceLayerDefUid);
@@ -168,7 +151,6 @@ class LayerDef {
 			type: JsonTools.writeEnum(type, false),
 			uid: uid,
 			doc: JsonTools.escapeNullableString(doc),
-			uiColor: uiColor==null ? null : uiColor.toHex(),
 
 			gridSize: gridSize,
 			guideGridWid: guideGridWid,
@@ -178,7 +160,6 @@ class LayerDef {
 			hideInList: hideInList,
 			hideFieldsWhenInactive: hideFieldsWhenInactive,
 			canSelectWhenInactive: canSelectWhenInactive,
-			renderInWorldView: renderInWorldView,
 			pxOffsetX: pxOffsetX,
 			pxOffsetY: pxOffsetY,
 			parallaxFactorX: parallaxFactorX,
@@ -191,14 +172,6 @@ class LayerDef {
 				value: iv.value,
 				identifier: iv.identifier,
 				color: JsonTools.writeColor(iv.color),
-				tile: JsonTools.writeTileRect(iv.tile),
-				groupUid: iv.groupUid,
-			}),
-
-			intGridValuesGroups: intGridValuesGroups.map(g->{
-				uid: g.uid,
-				identifier: g.identifier,
-				color: g.color,
 			}),
 
 			autoRuleGroups: isAutoLayer() ? autoRuleGroups.map( function(rg) return toJsonRuleGroup(rg)) : [],
@@ -214,11 +187,9 @@ class LayerDef {
 		return {
 			uid: rg.uid,
 			name: rg.name,
-			color: rg.color!=null ? rg.color.toHex() : null,
-			icon: JsonTools.writeTileRect(rg.icon),
 			active: rg.active,
 			isOptional: rg.isOptional,
-			rules: rg.rules.map( function(r) return r.toJson(this) ),
+			rules: rg.rules.map( function(r) return r.toJson() ),
 			usesWizard: rg.usesWizard,
 		}
 	}
@@ -228,10 +199,8 @@ class LayerDef {
 			JsonTools.readInt(ruleGroupJson.uid,-1),
 			JsonTools.readString(ruleGroupJson.name, "default")
 		);
-		rg.color = JsonTools.readColor(ruleGroupJson.color, true);
 		rg.active = JsonTools.readBool( ruleGroupJson.active, true );
 		rg.isOptional = JsonTools.readBool( ruleGroupJson.isOptional, false );
-		rg.icon = JsonTools.readTileRect( ruleGroupJson.icon, true );
 		rg.rules = JsonTools.readArray( ruleGroupJson.rules ).map( function(ruleJson) {
 			return AutoLayerRuleDef.fromJson(jsonVersion, ruleJson);
 		});
@@ -245,46 +214,18 @@ class LayerDef {
 	}
 
 
-	public function sortIntGridValueDef(valueId:Int, fromGroupUid:Int, toGroupUid:Int, fromGroupIdx:Int, toGroupIdx:Int) : Null<IntGridValueDefEditor> {
+	public function sortIntGridValueDef(from:Int, to:Int) : Null<IntGridValueDef> {
 		if( type!=IntGrid )
 			return null;
 
-		if( !hasIntGridValue(valueId) || fromGroupUid==toGroupUid && fromGroupIdx==toGroupIdx )
+		if( from<0 || from>=intGridValues.length || from==to )
 			return null;
 
-		var groupedValues = getGroupedIntGridValues();
-		var moved = getIntGridValueDef(valueId);
-
-		// Order values
-		var toGroup = groupedValues.filter( g->g.groupUid==toGroupUid )[0];
-		if( toGroup.all.length>0 ) {
-			if( toGroupIdx>=toGroup.all.length || fromGroupUid==toGroupUid && toGroupIdx>fromGroupIdx ) {
-				var insertAfter = toGroup.all[toGroup.all.length-1];
-				intGridValues.splice( intGridValues.indexOf(moved), 1 );
-				intGridValues.insert( intGridValues.indexOf(insertAfter)+1, moved );
-			}
-			else {
-				var insertBefore = toGroup.all[toGroupIdx];
-				intGridValues.splice( intGridValues.indexOf(moved), 1 );
-				intGridValues.insert( intGridValues.indexOf(insertBefore), moved );
-			}
-		}
-
-		// Change group
-		moved.groupUid = toGroupUid;
-
-		return moved;
-	}
-
-	public function sortIntGridValueGroupDef(from:Int, to:Int) : Null<ldtk.Json.IntGridValueGroupDef> {
-		if( from<0 || from>=intGridValuesGroups.length || from==to )
+		if( to<0 || to>=intGridValues.length )
 			return null;
 
-		if( to<0 || to>=intGridValuesGroups.length )
-			return null;
-
-		var moved = intGridValuesGroups.splice(from,1)[0];
-		intGridValuesGroups.insert(to, moved);
+		var moved = intGridValues.splice(from,1)[0];
+		intGridValues.insert(to, moved);
 
 		return moved;
 	}
@@ -298,44 +239,23 @@ class LayerDef {
 		return max+1;
 	}
 
-	public function addIntGridValue(col:dn.Col, ?id:String) : Int {
+	public function addIntGridValue(col:dn.Col, ?id:String) {
 		if( !isIntGridValueIdentifierValid(id) )
 			throw "Invalid intGrid value identifier "+id;
 
-		var iv = getNextIntGridValue();
 		intGridValues.push({
-			value: iv,
+			value: getNextIntGridValue(),
 			color: col,
 			identifier: id,
-			tile: null,
-			groupUid: 0,
 		});
-
-		return iv;
 	}
-
-
-	public function addIntGridGroup() : ldtk.Json.IntGridValueGroupDef {
-		var uniqUid = 1;
-		for(g in intGridValuesGroups)
-			uniqUid = M.imax(uniqUid, g.uid+1);
-
-		var g : ldtk.Json.IntGridValueGroupDef = {
-			uid: uniqUid,
-			identifier: null,
-			color: null,
-		}
-		intGridValuesGroups.push(g);
-		return g;
-	}
-
 
 	public inline function hasIntGridValue(v:Int) {
 		return getIntGridValueDef(v)!=null;
 	}
 
-	public inline function getIntGridValueDef(value:Int) : Null<IntGridValueDefEditor> {
-		var out : Null<IntGridValueDefEditor> = null;
+	public inline function getIntGridValueDef(value:Int) : Null<IntGridValueDef> {
+		var out : Null<IntGridValueDef> = null;
 		for(v in intGridValues)
 			if( v.value==value ) {
 				out = v;
@@ -373,81 +293,7 @@ class LayerDef {
 		return false;
 	}
 
-	public function removeIntGridGroup(groupUid:Int) : Bool {
-		for(iv in intGridValues)
-			if( iv.groupUid==groupUid )
-				return false;
-
-		for(g in intGridValuesGroups)
-			if( g.uid==groupUid ) {
-				intGridValuesGroups.remove(g);
-				return true;
-			}
-
-		return false;
-	}
-
 	public inline function getAllIntGridValues() return intGridValues;
-
-	public function getIntGridGroup(groupUid:Int, returnUngrouped=true) {
-		for(g in intGridValuesGroups)
-			if( g.uid==groupUid )
-				return {
-					groupUid: g.uid,
-					displayName: g.identifier==null ? 'Group ${g.uid}' : g.identifier,
-					color: g.color==null ? null : dn.Col.parseHex(g.color),
-					groupInf: g,
-					all: intGridValues.filter( iv->iv.groupUid==g.uid ),
-				}
-
-		if( returnUngrouped )
-			return {
-				groupUid: 0,
-				displayName: "Ungrouped",
-				color: null,
-				groupInf: null,
-				all: intGridValues.filter( iv->iv.groupUid==0 ),
-			}
-		else
-			return null;
-	}
-
-	public inline function resolveIntGridGroupUidFromRuleValue(ruleValue:Int) {
-		return Std.int(ruleValue/1000)-1;
-	}
-
-	public inline function hasIntGridGroups() {
-		return intGridValuesGroups.length>0;
-	}
-
-	public function getGroupedIntGridValues() {
-		var groups : Array<{
-			groupUid: Int,
-			displayName: String,
-			color: Null<dn.Col>,
-			groupInf:Null<ldtk.Json.IntGridValueGroupDef>,
-			all:Array<IntGridValueDefEditor>
-		}> = [];
-
-		groups.push({
-			groupUid: 0,
-			displayName: "Ungrouped",
-			color: null,
-			groupInf: null,
-			all: intGridValues.filter( iv->iv.groupUid==0 ),
-		});
-		for(g in intGridValuesGroups) {
-			groups.push({
-				groupUid: g.uid,
-				displayName: g.identifier==null ? 'Group ${g.uid}' : g.identifier,
-				color: g.color==null ? null : dn.Col.parseHex(g.color),
-				groupInf: g,
-				all: intGridValues.filter( iv->iv.groupUid==g.uid ),
-			});
-		}
-		return groups;
-	}
-
 	public inline function countIntGridValues() return intGridValues.length;
 
 	public function isIntGridValueIdentifierValid(id:Null<String>) {
@@ -565,8 +411,6 @@ class LayerDef {
 		var rg : AutoLayerRuleGroup = {
 			uid: uid,
 			name: name,
-			color: null,
-			icon: null,
 			active: true,
 			collapsed: false,
 			isOptional: false,
@@ -581,7 +425,7 @@ class LayerDef {
 	}
 
 	public function duplicateRule(p:data.Project, rg:AutoLayerRuleGroup, r:AutoLayerRuleDef) {
-		return pasteRule( p, rg, Clipboard.createTemp(CRule,r.toJson(this)), r );
+		return pasteRule( p, rg, Clipboard.createTemp(CRule,r.toJson()), r );
 	}
 
 	public function pasteRule(p:data.Project, rg:AutoLayerRuleGroup, c:Clipboard, ?after:AutoLayerRuleDef) : Null<AutoLayerRuleDef> {

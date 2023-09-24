@@ -216,8 +216,8 @@ class GenericLevelElementGroup {
 				case Entity(li, ei):
 					selectRender.beginFill(c, alpha);
 					selectRender.drawRect(
-						li.pxParallaxX + ( ei.x - ei.width * ei.def.pivotX ) * li.def.getScale(),
-						li.pxParallaxY + ( ei.y - ei.height * ei.def.pivotY ) * li.def.getScale(),
+						li.pxParallaxX + ( ei.x - ei.width * ei.getAdjustedPivotX() ) * li.def.getScale(),
+						li.pxParallaxY + ( ei.y - ei.height * ei.getAdjustedPivotY() ) * li.def.getScale(),
 						ei.width * li.def.getScale(),
 						ei.height * li.def.getScale()
 					);
@@ -258,14 +258,13 @@ class GenericLevelElementGroup {
 
 							case Tiles:
 								var td = li.getTilesetDef();
-								if( td!=null && td.isAtlasLoaded() )
-									for( t in li.getGridTileStack(cx,cy) ) {
-										var bmp = new h2d.Bitmap( td.getTile(t.tileId), ghost );
-										bmp.x = li.pxParallaxX + ( cx + (M.hasBit(t.flips,0)?1:0) ) * li.def.scaledGridSize - bounds.left;
-										bmp.y = li.pxParallaxY + ( cy + (M.hasBit(t.flips,1)?1:0) ) * li.def.scaledGridSize - bounds.top;
-										bmp.scaleX = M.hasBit(t.flips, 0) ? -1 : 1;
-										bmp.scaleY = M.hasBit(t.flips, 1) ? -1 : 1;
-									}
+								for( t in li.getGridTileStack(cx,cy) ) {
+									var bmp = new h2d.Bitmap( td.getTile(t.tileId), ghost );
+									bmp.x = li.pxParallaxX + ( cx + (M.hasBit(t.flips,0)?1:0) ) * li.def.scaledGridSize - bounds.left;
+									bmp.y = li.pxParallaxY + ( cy + (M.hasBit(t.flips,1)?1:0) ) * li.def.scaledGridSize - bounds.top;
+									bmp.scaleX = M.hasBit(t.flips, 0) ? -1 : 1;
+									bmp.scaleY = M.hasBit(t.flips, 1) ? -1 : 1;
+								}
 
 							case Entities:
 							case AutoLayer:
@@ -478,8 +477,7 @@ class GenericLevelElementGroup {
 							case RefLinkBetweenCenters: continue;
 							case RefLinkBetweenPivots: continue;
 							case Points: continue;
-							case EntityTile, LevelTile: continue;
-							case Hidden, ValueOnly, NameAndValue, ArrayCountNoLabel, ArrayCountWithLabel, RadiusPx, RadiusGrid: continue;
+							case Hidden, ValueOnly, NameAndValue, ArrayCountNoLabel, ArrayCountWithLabel, EntityTile, RadiusPx, RadiusGrid: continue;
 						}
 
 						// Links to Entity own field points

@@ -10,8 +10,7 @@ class EditEntityDefs extends ui.modal.Panel {
 	var jPreview(get,never) : js.jquery.JQuery; inline function get_jPreview() return jContent.find(".previewWrapper");
 
 	var curEntity : Null<data.def.EntityDef>;
-	public var fieldsForm : FieldDefsForm;
-	var search : QuickSearch;
+	var fieldsForm : FieldDefsForm;
 
 
 	public function new(?editDef:data.def.EntityDef) {
@@ -67,12 +66,9 @@ class EditEntityDefs extends ui.modal.Panel {
 		});
 
 		// Create fields editor
-		fieldsForm = new ui.FieldDefsForm( FP_Entity(null) );
+		fieldsForm = new ui.FieldDefsForm( FP_Entity );
 		jContent.find("#fields").replaceWith( fieldsForm.jWrapper );
 
-		// Create quick search
-		search = new ui.QuickSearch( jContent.find(".entityList ul") );
-		search.jWrapper.appendTo( jContent.find(".search") );
 
 		// Select same entity as current client selection
 		if( editDef!=null )
@@ -173,6 +169,7 @@ class EditEntityDefs extends ui.modal.Panel {
 			return;
 		}
 
+		JsTools.parseComponents(jEntityForm);
 		jAll.css("visibility","visible");
 		jContent.find(".none").hide();
 
@@ -206,66 +203,25 @@ class EditEntityDefs extends ui.modal.Panel {
 
 		// Resizable
 		var i = Input.linkToHtmlInput( curEntity.resizableX, jEntityForm.find("input#resizableX") );
-		i.onValueChange = (v)->if( !v ) {
-			curEntity.minWidth = null;
-			curEntity.maxWidth = null;
-		}
-		else {
-			curEntity.minWidth = curEntity.width;
-		}
-		i.linkEvent(EntityDefChanged);
+		i.onChange = editor.ge.emit.bind(EntityDefChanged);
 		var i = Input.linkToHtmlInput( curEntity.resizableY, jEntityForm.find("input#resizableY") );
-		i.linkEvent(EntityDefChanged);
-		i.onValueChange = (v)->if( !v ) {
-			curEntity.minHeight = null;
-			curEntity.maxHeight = null;
-		}
-		else {
-			curEntity.minHeight = curEntity.height;
-		}
+		i.onChange = editor.ge.emit.bind(EntityDefChanged);
 		var i = Input.linkToHtmlInput( curEntity.keepAspectRatio, jEntityForm.find("input#keepAspectRatio") );
-		i.linkEvent(EntityDefChanged);
+		i.onChange = editor.ge.emit.bind(EntityDefChanged);
 		i.setEnabled( curEntity.resizableX && curEntity.resizableY );
+
+		// Flippable
+		var i = Input.linkToHtmlInput( curEntity.flippableX, jEntityForm.find("input#flippableX") );
+		i.onChange = editor.ge.emit.bind(EntityDefChanged);
+		var i = Input.linkToHtmlInput( curEntity.flippableY, jEntityForm.find("input#flippableY") );
+		i.onChange = editor.ge.emit.bind(EntityDefChanged);
+
+		var i = Input.linkToHtmlInput( curEntity.flipAroundPivot, jEntityForm.find("input#flipAroundPivot") );
+		i.onChange = editor.ge.emit.bind(EntityDefChanged);
 
 		var i = Input.linkToHtmlInput( curEntity.height, jEntityForm.find("input[name='height']") );
 		i.setBounds(1,2048);
 		i.onChange = editor.ge.emit.bind(EntityDefChanged);
-
-		// Min/max for resizables
-		var jMinMax = jEntityForm.find(".minMax");
-		if( curEntity.isResizable() ) {
-			jMinMax.show();
-			// Min width
-			var i = Input.linkToHtmlInput( curEntity.minWidth, jMinMax.find("input[name=minWidth]") );
-			i.setEnabled(curEntity.resizableX);
-			i.setPlaceholder(curEntity.resizableX ? "None" : "");
-			i.setBounds(0, curEntity.maxWidth);
-			i.fixValue = (v)->return v<=0 ? null : v;
-			i.linkEvent(EntityDefChanged);
-			// Min height
-			var i = Input.linkToHtmlInput( curEntity.minHeight, jMinMax.find("input[name=minHeight]") );
-			i.setEnabled(curEntity.resizableY);
-			i.setPlaceholder(curEntity.resizableY ? "None" : "");
-			i.setBounds(0, curEntity.maxHeight);
-			i.fixValue = (v)->return v<=0 ? null : v;
-			i.linkEvent(EntityDefChanged);
-			// Max width
-			var i = Input.linkToHtmlInput( curEntity.maxWidth, jMinMax.find("input[name=maxWidth]") );
-			i.setEnabled(curEntity.resizableX);
-			i.setPlaceholder(curEntity.resizableX ? "None" : "");
-			i.setBounds(curEntity.minWidth, null);
-			i.fixValue = (v)->return v<=0 ? null : v;
-			i.linkEvent(EntityDefChanged);
-			// Max height
-			var i = Input.linkToHtmlInput( curEntity.maxHeight, jMinMax.find("input[name=maxHeight]") );
-			i.setEnabled(curEntity.resizableY);
-			i.setPlaceholder(curEntity.resizableY ? "None" : "");
-			i.setBounds(curEntity.minHeight, null);
-			i.fixValue = (v)->return v<=0 ? null : v;
-			i.linkEvent(EntityDefChanged);
-		}
-		else
-			jMinMax.hide();
 
 		// Display renderMode form fields based on current mode
 		var jRenderModeBlock = jEntityForm.find("dd.renderMode");
@@ -447,37 +403,6 @@ class EditEntityDefs extends ui.modal.Panel {
 		}
 
 
-		// UI override tile
-		JsTools.createTilesetSelect(
-			project,
-			jEntityForm.find(".uiTileset"),
-			curEntity.uiTileRect!=null ? curEntity.uiTileRect.tilesetUid : null,
-			true,
-			"Use default editor visual",
-			(uid)->{
-				if( uid!=null )
-					curEntity.uiTileRect = { tilesetUid: uid, x: 0, y: 0, w: 0, h:0, }
-				else
-					curEntity.uiTileRect = null;
-				editor.ge.emit(EntityDefChanged);
-			}
-		);
-		var jUiTilePickerWrapper = jEntityForm.find(".uiTilePicker").empty();
-		if( curEntity.uiTileRect!=null ) {
-			var jPicker = JsTools.createTileRectPicker(
-				curEntity.uiTileRect.tilesetUid,
-				curEntity.uiTileRect.w>0 ? curEntity.uiTileRect : null,
-				(rect)->{
-					if( rect!=null ) {
-						curEntity.uiTileRect = rect;
-						editor.ge.emit(EntityDefChanged);
-					}
-				}
-			);
-			jUiTilePickerWrapper.append( jPicker );
-		}
-
-
 		// Max count
 		var i = Input.linkToHtmlInput(curEntity.maxCount, jEntityForm.find("input#maxCount") );
 		i.setBounds(0,1024);
@@ -540,15 +465,14 @@ class EditEntityDefs extends ui.modal.Panel {
 		jPivots.append(p);
 
 		checkBackup();
-		JsTools.parseComponents(jEntityForm);
 	}
 
 
 	function updateFieldsForm() {
 		if( curEntity!=null )
-			fieldsForm.useFields(FP_Entity(curEntity), curEntity.fieldDefs);
+			fieldsForm.useFields(curEntity.identifier, curEntity.fieldDefs);
 		else {
-			fieldsForm.useFields(FP_Entity(null), []);
+			fieldsForm.useFields("Entity", []);
 			fieldsForm.hide();
 		}
 		checkBackup();
@@ -576,10 +500,8 @@ class EditEntityDefs extends ui.modal.Panel {
 		for( group in tagGroups ) {
 			// Tag name
 			if( tagGroups.length>1 ) {
-				var jSep = new J('<li class="title collapser"/>');
+				var jSep = new J('<li class="title fixed"/>');
 				jSep.text( group.tag==null ? L._Untagged() : group.tag );
-				jSep.attr("id", project.iid+"_entity_tag_"+group.tag);
-				jSep.attr("default", "open");
 				jSep.appendTo(jEntityList);
 
 				// Rename
@@ -608,10 +530,9 @@ class EditEntityDefs extends ui.modal.Panel {
 			jSubList.appendTo(jLi);
 
 			for(ed in group.all) {
-				var jEnt = new J('<li class="iconLeft draggable"/>');
+				var jEnt = new J('<li class="iconLeft"/>');
 				jEnt.appendTo(jSubList);
 				jEnt.attr("uid", ed.uid);
-				jEnt.css("background-color", dn.Col.fromInt(ed.color).toCssRgba(0.2));
 
 				// HTML entity display preview
 				var preview = JsTools.createEntityPreview(editor.project, ed);
@@ -673,12 +594,10 @@ class EditEntityDefs extends ui.modal.Panel {
 				var moved = project.defs.sortEntityDef(fromIdx, toIdx);
 				selectEntity(moved);
 				editor.ge.emit(EntityDefSorted);
-			}, { onlyDraggables:true });
+			});
 		}
 
-		JsTools.parseComponents(jEntityList);
 		checkBackup();
-		search.run();
 	}
 
 

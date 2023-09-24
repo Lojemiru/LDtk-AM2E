@@ -210,7 +210,6 @@ class FieldInstanceRender {
 
 	public static function renderFields(fieldInstances:Array<data.inst.FieldInstance>, baseColor:dn.Col, ctx:FieldRenderContext, parent:h2d.Flow) {
 		var allRenders = [];
-		parent.removeChildren();
 
 		var ei = switch ctx {
 			case EntityCtx(g, ei, ld): ei;
@@ -241,7 +240,7 @@ class FieldInstanceRender {
 			allRenders.push(fr);
 			var row = new h2d.Flow(parent);
 			row.verticalAlign = Middle;
-			row.setScale( settings.v.editorUiScale*fi.def.editorDisplayScale );
+			row.setScale( settings.v.editorUiScale );
 			if( fr.label.numChildren>0 ) {
 				row.addChild(fr.label);
 				row.addSpacing(6);
@@ -253,6 +252,7 @@ class FieldInstanceRender {
 		}
 
 		parent.reflow();
+		// parent.debug = true;
 
 		// Align labels
 		var maxLabelWidth = 0.;
@@ -299,14 +299,12 @@ class FieldInstanceRender {
 				}
 
 				// Fields background
-				if( parent.numChildren>0 ) {
-					var bg = new h2d.Bitmap( h2d.Tile.fromColor(baseColor.toBlack(0.65)) );
-					parent.addChildAt(bg, 0);
-					parent.getProperties(bg).isAbsolute = true;
-					bg.setPosition(-padX + maxLabelWidth*settings.v.editorUiScale, -padY+1);
-					bg.scaleX = parent.outerWidth - maxLabelWidth*settings.v.editorUiScale + padX*2;
-					bg.scaleY = parent.outerHeight + padY*2;
-				}
+				var bg = new h2d.Bitmap( h2d.Tile.fromColor(baseColor.toBlack(0.65)) );
+				parent.addChildAt(bg, 0);
+				parent.getProperties(bg).isAbsolute = true;
+				bg.setPosition(-padX + maxLabelWidth*settings.v.editorUiScale, -padY+1);
+				bg.scaleX = parent.outerWidth - maxLabelWidth*settings.v.editorUiScale + padX*2;
+				bg.scaleY = parent.outerHeight + padY*2;
 		}
 	}
 
@@ -349,15 +347,13 @@ class FieldInstanceRender {
 
 	public static inline function createFilter(col:dn.Col) : Null<h2d.filter.Filter> {
 		return switch settings.v.fieldsRender {
-			case FR_Outline: new h2d.filter.Outline(1, col.toBlack(0.66), 0.6);
+			case FR_Outline: new h2d.filter.Outline(1.5, col.toBlack(0.75), 0.03);
 			case FR_Table: null;
 		}
 	}
 
 	static function renderField(fi:data.inst.FieldInstance, baseColor:dn.Col, ctx:FieldRenderContext) : Null<RenderedField> {
 		var fd = fi.def;
-		if( fd.editorDisplayColor!=null )
-			baseColor = fd.editorDisplayColor;
 
 		var labelFlow = new h2d.Flow();
 		labelFlow.verticalAlign = Middle;
@@ -365,7 +361,7 @@ class FieldInstanceRender {
 		labelFlow.padding = 0;
 		switch ctx {
 			case EntityCtx(g, ei, ld): labelFlow.filter = createFilter(baseColor);
-			case LevelCtx(l): labelFlow.filter = createFilter(baseColor);
+			case LevelCtx(l):
 		}
 
 		var valueFlow = new h2d.Flow();
@@ -401,7 +397,7 @@ class FieldInstanceRender {
 
 			case NameAndValue:
 				// Label
-				var tf = createText(labelFlow, baseColor.toWhite(0.3));
+				var tf = createText(labelFlow, baseColor.toWhite(0.6));
 				tf.text = fd.identifier + ( settings.v.fieldsRender==FR_Outline ? " =" : "" );
 
 				// Value
@@ -442,7 +438,6 @@ class FieldInstanceRender {
 				}
 
 			case EntityTile:
-			case LevelTile:
 
 			case RefLinkBetweenCenters:
 				switch ctx {
@@ -508,9 +503,7 @@ class FieldInstanceRender {
 							g.endFill();
 
 							switch fd.editorDisplayMode {
-								case Hidden, ValueOnly, NameAndValue, RadiusPx, RadiusGrid, ArrayCountNoLabel, ArrayCountWithLabel:
-								case EntityTile:
-								case LevelTile:
+								case Hidden, ValueOnly, NameAndValue, EntityTile, RadiusPx, RadiusGrid, ArrayCountNoLabel, ArrayCountWithLabel:
 								case Points, PointStar:
 								case RefLinkBetweenCenters:
 								case RefLinkBetweenPivots:

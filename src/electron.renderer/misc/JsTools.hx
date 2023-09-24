@@ -4,28 +4,20 @@ import sortablejs.*;
 import sortablejs.Sortable;
 import js.node.Fs;
 
-typedef InternalSortableOptions = {
-	var ?onlyDraggables: Bool;
-	var ?disableAnim: Bool;
-}
-
 class JsTools {
 
 	/**
 		Use SortableJS to make some list sortable
 		See: https://github.com/SortableJS/Sortable
 	**/
-	public static function makeSortable(jSortable:js.jquery.JQuery, ?jScrollRoot:js.jquery.JQuery, ?group:String, onSort:(event:SortableDragEvent)->Void, ?extraOptions:InternalSortableOptions) {
-		if( extraOptions==null )
-			extraOptions = {}
-
+	public static function makeSortable(jSortable:js.jquery.JQuery, ?jScrollRoot:js.jquery.JQuery, ?group:String, anim=true, onSort:(event:SortableDragEvent)->Void) {
 		if( jSortable.length!=1 )
 			throw "Used sortable on a set of "+jSortable.length+" element(s)";
 
 		jSortable.addClass("sortable");
 
 		// Base settings
-		var options : SortableOptions = {
+		var settings : SortableOptions = {
 			onStart: function(ev) {
 				App.ME.jBody.addClass("sorting");
 				jSortable.addClass("sorting");
@@ -46,62 +38,24 @@ class JsTools {
 			scroll: jScrollRoot!=null ? jScrollRoot.get(0) : jSortable.get(0),
 			scrollSpeed: 40,
 			scrollSensitivity: 140,
-			animation: extraOptions.disableAnim==true ? 0 : 100,
+			filter: ".fixed",
+			animation: anim ? 100 : 0,
 		}
 
 		// Custom handle
 		if( jSortable.children().children(".sortHandle").length>0 ) {
-			options.handle = ".sortHandle";
+			settings.handle = ".sortHandle";
 			jSortable.addClass("customHandle");
 		}
 
-		// Extra options
-		if( extraOptions.onlyDraggables==true ) {
-			jSortable.addClass("onlyDraggables");
-			options.draggable = ".draggable";
-		}
-
-		Sortable.create( jSortable.get(0), options);
-	}
-
-
-	public static function createValuesSelect<T>(?jSelect:js.jquery.JQuery, cur:T, allValues:Array<T>, ?def:T, ?printer:T->String, onSelect:T->Void) {
-		if( jSelect==null )
-			jSelect = new J('<select/>');
-		else
-			jSelect.empty().off();
-
-		// Ensure cur is part of allValues
-		if( !allValues.contains(cur) )
-			cur = def;
-
-		var i = 0;
-		for(v in allValues) {
-			var jOpt = new J('<option value="$i"/>');
-			jSelect.append(jOpt);
-			jOpt.text(printer!=null ? printer(v) : Std.string(v));
-
-			if( def!=null && v==def )
-				jOpt.append(" "+L.t._("(default)"));
-
-			if( v==cur )
-				jOpt.prop("selected",true);
-
-			i++;
-		}
-		jSelect.change( (_)->{
-			var i = Std.parseInt( jSelect.val() );
-			onSelect(allValues[i]);
-		});
-
-		return jSelect;
+		Sortable.create( jSortable.get(0), settings);
 	}
 
 
 	/**
 		Create a Tileset <select/>
 	**/
-	public static function createTilesetSelect(project:data.Project, ?jSelect:js.jquery.JQuery, curUid:Null<Int>, allowNull=false, ?nullLabel:String, onPick:Null<Int>->Void) {
+	public static function createTilesetSelect(project:data.Project, ?jSelect:js.jquery.JQuery, curUid:Null<Int>, allowNull=false, onPick:Null<Int>->Void) {
 		// Init select
 		if( jSelect!=null ) {
 			if( !jSelect.is("select") )
@@ -114,10 +68,8 @@ class JsTools {
 		jSelect.removeClass("noValue");
 
 		// Null value
-		if( nullLabel==null )
-			nullLabel = "Select a tileset";
 		if( allowNull || curUid==null ) {
-			var jOpt = new J('<option value="-1">-- $nullLabel --</option>');
+			var jOpt = new J('<option value="-1">-- Select a tileset --</option>');
 			jOpt.appendTo(jSelect);
 		}
 
@@ -257,146 +209,93 @@ class JsTools {
 		return icon;
 	}
 
+	public static function createTile(td:data.def.TilesetDef, tileId:Int, size:Int) {
+		var jCanvas = new J('<canvas></canvas>');
+		jCanvas.attr("width",td.tileGridSize);
+		jCanvas.attr("height",td.tileGridSize);
+		jCanvas.css("width", size+"px");
+		jCanvas.css("height", size+"px");
+		td.drawTileToCanvas(jCanvas, tileId);
+		return jCanvas;
+	}
 
-	public static function createEntityPreview(project:data.Project, ed:data.def.EntityDef, sizePx=32) {
+
+	public static function createEntityPreview(project:data.Project, ed:data.def.EntityDef, sizePx=24) {
 		var jWrapper = new J('<div class="entityPreview icon"></div>');
 		jWrapper.css("width", sizePx+"px");
 		jWrapper.css("height", sizePx+"px");
 
-		if( ed.uiTileRect!=null && ed.uiTileRect.w>0 ) {
-			// Alt custom UI tile
-			var td = project.defs.getTilesetDef(ed.uiTileRect.tilesetUid);
-			var jImg = td.createTileHtmlImageFromRect(ed.uiTileRect);
-			jWrapper.append(jImg);
+		var scale = sizePx / M.fmax(ed.width, ed.height);
+
+		var jCanvas = new J('<canvas></canvas>');
+		jCanvas.appendTo(jWrapper);
+		jCanvas.attr("width", ed.width*scale);
+		jCanvas.attr("height", ed.height*scale);
+
+		var cnv = Std.downcast( jCanvas.get(0), js.html.CanvasElement );
+		var ctx = cnv.getContext2d();
+
+		switch ed.renderMode {
+			case Rectangle:
+				ctx.fillStyle = C.intToHex(ed.color);
+				ctx.fillRect(0, 0, ed.width*scale, ed.height*scale);
+
+			case Cross:
+				ctx.strokeStyle = C.intToHex(ed.color);
+				ctx.lineWidth = 5 * js.Browser.window.devicePixelRatio;
+				ctx.moveTo(0,0);
+				ctx.lineTo(ed.width*scale, ed.height*scale);
+				ctx.moveTo(0,ed.height*scale);
+				ctx.lineTo(ed.width*scale, 0);
+				ctx.stroke();
+
+			case Ellipse:
+				ctx.fillStyle = C.intToHex(ed.color);
+				ctx.beginPath();
+				ctx.ellipse(
+					ed.width*0.5*scale, ed.height*0.5*scale,
+					ed.width*0.5*scale, ed.height*0.5*scale,
+					0, 0, M.PI*2
+				);
+				ctx.fill();
+
+			case Tile:
+				ctx.fillStyle = C.intToHex(ed.color)+"66";
+				ctx.beginPath();
+				ctx.rect(0, 0, Std.int(ed.width*scale), Std.int(ed.height*scale));
+				ctx.fill();
+
+				if( ed.isTileDefined() ) {
+					var td = project.defs.getTilesetDef(ed.tilesetId);
+					var x = 0;
+					var y = 0;
+					var scaleX = 1.;
+					var scaleY = 1.;
+					switch ed.tileRenderMode {
+						case Stretch:
+							scaleX = scale * ed.width / td.tileGridSize;
+							scaleY = scale * ed.height / td.tileGridSize;
+
+						case FitInside:
+							var s = M.fmin(scale * ed.width / td.tileGridSize, scale * ed.height / td.tileGridSize);
+							scaleX = s;
+							scaleY = s;
+
+						case Cover, Repeat:
+							var s = M.fmin(scale * ed.width / td.tileGridSize, scale * ed.height / td.tileGridSize);
+							scaleX = s;
+							scaleY = s;
+
+						case FullSizeCropped:
+						case FullSizeUncropped:
+
+						case NineSlice:
+							scaleX = scale * ed.width / td.tileGridSize; // TODO
+							scaleY = scale * ed.height / td.tileGridSize;
+					}
+					td.drawTileRectToCanvas(jCanvas, ed.tileRect, x,y, scaleX, scaleY);
+				}
 		}
-		else if( ed.renderMode==Tile && ed.tileRect!=null ) {
-			// Tile
-			var td = project.defs.getTilesetDef(ed.tileRect.tilesetUid);
-			var jImg = td.createTileHtmlImageFromRect(ed.tileRect);
-			jWrapper.append(jImg);
-			jImg.css("opacity", ed.tileOpacity);
-			if( ed.lineOpacity>0 ) {
-				jWrapper.addClass("hasBg");
-				jWrapper.css("outline", "1px solid "+new dn.Col(ed.color).toCssRgba(ed.lineOpacity));
-			}
-			if( ed.fillOpacity>0 ) {
-				jWrapper.addClass("hasBg");
-				jWrapper.css("background-color", new dn.Col(ed.color).toCssRgba(ed.fillOpacity));
-			}
-		}
-		else {
-			// Shape
-			var superScale = 3;
-			var wid = ed.width*superScale;
-			var hei = ed.height*superScale;
-			var jCanvas = new J('<canvas></canvas>');
-			jCanvas.appendTo(jWrapper);
-			jCanvas.attr("width", wid);
-			jCanvas.attr("height", hei);
-
-			var cnv = Std.downcast( jCanvas.get(0), js.html.CanvasElement );
-			var ctx = cnv.getContext2d();
-			var pad = M.round( sizePx*0.1*superScale );
-
-			ctx.fillStyle = new dn.Col(ed.color).toCssRgba(ed.fillOpacity);
-			ctx.strokeStyle = new dn.Col(ed.color).toCssRgba(ed.lineOpacity);
-			ctx.lineWidth = 2/superScale;
-
-			switch ed.renderMode {
-				case Rectangle:
-					ctx.fillRect(pad, pad, wid-pad*2, hei-pad*2);
-					ctx.strokeRect(pad, pad, wid-pad*2, hei-pad*2);
-
-				case Ellipse:
-					ctx.beginPath();
-					ctx.ellipse(
-						wid*0.5, hei*0.5,
-						wid*0.5-pad, hei*0.5-pad,
-						0, 0, M.PI*2
-					);
-					ctx.fill();
-					ctx.stroke();
-
-				case Cross:
-					ctx.lineWidth = 3;
-					ctx.moveTo(0,0);
-					ctx.lineTo(wid, hei);
-					ctx.moveTo(0,hei);
-					ctx.lineTo(wid, 0);
-					ctx.stroke();
-
-				case Tile: // N/A
-			}
-		}
-
-		// var scale = sizePx / M.fmax(ed.width, ed.height);
-
-		// var jCanvas = new J('<canvas></canvas>');
-		// jCanvas.appendTo(jWrapper);
-		// jCanvas.attr("width", ed.width*scale);
-		// jCanvas.attr("height", ed.height*scale);
-
-		// var cnv = Std.downcast( jCanvas.get(0), js.html.CanvasElement );
-		// var ctx = cnv.getContext2d();
-
-		// if( ed.uiTileRect!=null && ed.uiTileRect.w>0 ) {
-		// 	// Custom override UI tile
-		// 	var td = project.defs.getTilesetDef(ed.uiTileRect.tilesetUid);
-		// 	ctx.fillStyle = C.intToHex(ed.color)+"88";
-		// 	ctx.beginPath();
-		// 	ctx.rect(0, 0, Std.int(ed.width*scale), Std.int(ed.height*scale));
-		// 	ctx.fill();
-		// 	var s = M.fmin(scale * ed.width/td.tileGridSize, scale * ed.height/td.tileGridSize);
-		// 	td.drawTileRectToCanvas(jCanvas, ed.uiTileRect, 0,0, s,s);
-		// }
-		// else {
-		// 	// Default editor visual
-		// 	switch ed.renderMode {
-		// 		case Rectangle:
-
-		// 		case Cross:
-
-		// 		case Ellipse:
-
-		// 		case Tile:
-		// 			ctx.fillStyle = C.intToHex(ed.color)+"66";
-		// 			ctx.beginPath();
-		// 			ctx.rect(0, 0, Std.int(ed.width*scale), Std.int(ed.height*scale));
-		// 			ctx.fill();
-
-		// 			if( ed.isTileDefined() ) {
-		// 				var td = project.defs.getTilesetDef(ed.tilesetId);
-		// 				var x = 0;
-		// 				var y = 0;
-		// 				var scaleX = 1.;
-		// 				var scaleY = 1.;
-		// 				switch ed.tileRenderMode {
-		// 					case Stretch:
-		// 						scaleX = scale * ed.width / td.tileGridSize;
-		// 						scaleY = scale * ed.height / td.tileGridSize;
-
-		// 					case FitInside:
-		// 						var s = M.fmin(scale * ed.width / td.tileGridSize, scale * ed.height / td.tileGridSize);
-		// 						scaleX = s;
-		// 						scaleY = s;
-
-		// 					case Cover, Repeat:
-		// 						var s = M.fmin(scale * ed.width / td.tileGridSize, scale * ed.height / td.tileGridSize);
-		// 						scaleX = s;
-		// 						scaleY = s;
-
-		// 					case FullSizeCropped:
-		// 					case FullSizeUncropped:
-
-		// 					case NineSlice:
-		// 						scaleX = scale * ed.width / td.tileGridSize; // TODO
-		// 						scaleY = scale * ed.height / td.tileGridSize;
-		// 				}
-		// 				td.drawTileRectToCanvas(jCanvas, ed.tileRect, x,y, scaleX, scaleY);
-		// 			}
-		// 	}
-		// }
-
 
 		return jWrapper;
 	}
@@ -624,10 +523,7 @@ class JsTools {
 	}
 
 
-	public static function parseComponents(jCtx:js.jquery.JQuery) : Void {
-		// Disable img dragging
-		jCtx.find("img").attr("draggable","false");
-
+	public static function parseComponents(jCtx:js.jquery.JQuery) {
 		// Info bubbles: (i) and (!)
 		jCtx.find(".info, info, warning").each( function(idx, e) {
 			var jThis = new J(e);
@@ -715,12 +611,12 @@ class JsTools {
 		// Auto tool-tips
 		jCtx.find("[title]:not([noTip]), [data-title]").each( function(idx,e) {
 			var jThis = new J(e);
-			if( jThis.attr("title")!=null ) {
-				var str =  jThis.attr("title");
-				jThis.removeAttr("title");
-				jThis.attr("data-title", str);
-			}
 			var tipStr = jThis.attr("data-title");
+			if( tipStr==null ) {
+				tipStr =  jThis.attr("title");
+				jThis.removeAttr("title");
+				jThis.attr("data-title", tipStr);
+			}
 
 			// Parse key shortcut
 			var keys = [];
@@ -780,7 +676,7 @@ class JsTools {
 
 
 		// Collapser
-		jCtx.find(".collapser:visible").each( (idx,e)->{
+		jCtx.find(".collapser").each( (idx,e)->{
 			var jCollapser = new J(e);
 			var tid = jCollapser.attr("target");
 			var jTarget = tid!=null ? App.ME.jBody.find("#"+tid) : jCollapser.next();
@@ -806,7 +702,6 @@ class JsTools {
 				// Init from memory
 				if( App.ME.settings.getUiStateBool(uiStateId)==true ) {
 					jTarget.show();
-					parseComponents(jTarget);
 					jCollapser.addClass("expanded");
 				}
 				else {
@@ -818,7 +713,6 @@ class JsTools {
 			else if( customDefault==true ) {
 				// Use provided default
 				jTarget.show();
-				parseComponents(jTarget);
 				jCollapser.addClass("expanded");
 			}
 			else {
@@ -845,68 +739,9 @@ class JsTools {
 						jCollapser.addClass("expanded");
 						jTarget.slideDown(30, ()->dn.Process.resizeAll(false));
 						jTarget.show();
-						parseComponents(jTarget);
 						dn.Process.resizeAll(false);
 					}
 				});
-		});
-
-		// Advanced Selects
-		jCtx.find(".advancedSelect").remove();
-		jCtx.find("select.advanced:visible").each( (idx,e)->{
-			var jOldSelect = new J(e);
-
-			// Create advanced select & options
-			var jSelect = new J('<div class="advancedSelect"/>');
-			var classes = try (~/\s/).split( jOldSelect.attr("class") ) catch(_) [];
-			for(c in classes)
-				if( c!="advanced" )
-					jSelect.addClass(c);
-			jSelect.insertBefore(jOldSelect);
-			jSelect.append('<span class="expand icon expanded"></span>');
-			var hasImages = jOldSelect.find("[tile]").length>0;
-			for(elem in jOldSelect.children("option")) {
-				var jOldOpt = new J(elem);
-				var jOpt = new J('<div class="option"/>');
-				jSelect.append(jOpt);
-				jOpt.attr("value", jOldOpt.attr("value"));
-				jOpt.text( jOldOpt.text() );
-				if( jOldOpt.hasClass("default") )
-					jOpt.addClass("default");
-
-				if( jOldOpt.prop("disabled")==true )
-					jOpt.addClass("disabled");
-
-				// Background color
-				if( jOldOpt.is("[color]") ) {
-					var c = dn.Col.parseHex( jOldOpt.attr("color") );
-					jOpt.css("background-color", c.toCssRgba(0.3));
-				}
-
-				// Selected value
-				if( jOldSelect.val()==jOldOpt.attr("value") )
-					jOpt.addClass("selected");
-
-				// Icon
-				if( jOldOpt.attr("tile")!=null ) {
-					var r : ldtk.Json.TilesetRect = haxe.Json.parse(jOldOpt.attr("tile"));
-					var td = try Editor.ME.project.defs.getTilesetDef(r.tilesetUid) catch(_) null;
-					if( td!=null ) {
-						var img = td.getTileHtmlImg(r);
-						jOpt.prepend(img);
-					}
-				}
-				else if( hasImages )
-					jOpt.prepend('<div class="placeholder"></div>');
-			}
-
-			// Open select
-			jSelect.click(_->{
-				var uiStateId : Null<Settings.UiState> = cast jOldSelect.attr("id");
-				new ui.modal.dialog.SelectPicker(jSelect, uiStateId, v->{
-					jOldSelect.val(v).change();
-				});
-			});
 		});
 	}
 
@@ -1039,7 +874,7 @@ class JsTools {
 	public static function makeLocateLink(filePath:Null<String>, isFile:Bool) {
 		var a = new J('<a class="exploreTo"/>');
 		a.append('<span class="icon"/>');
-		a.find(".icon").addClass("locate");
+		a.find(".icon").addClass( isFile ? "locate" : "folder" );
 		a.click( function(ev) {
 			ev.preventDefault();
 			ev.stopPropagation();
@@ -1083,7 +918,6 @@ class JsTools {
 		tilesetId: Null<Int>,
 		selectMode: TilesetSelectionMode=Free,
 		tileIds: Array<Int>,
-		useSavedSelections=true,
 		onPick: (tileIds:Array<Int>)->Void
 	) {
 		var jTileCanvas = new J('<canvas class="tile"></canvas>');
@@ -1148,9 +982,7 @@ class JsTools {
 				m.addClass("singleTilePicker");
 
 				var tp = new ui.Tileset(m.jContent, td, selectMode);
-				tp.useSavedSelections = useSavedSelections;
 				tp.setSelectedTileIds(tileIds);
-				tp.onClickOutOfBounds = m.close;
 				if( selectMode==PickAndClose )
 					tp.onSelectAnything = ()->{
 						onPick([ tp.getSelectedTileIds()[0] ]);
@@ -1176,57 +1008,42 @@ class JsTools {
 	public static function createTileRectPicker(
 		tilesetId: Null<Int>,
 		cur: Null<ldtk.Json.TilesetRect>,
-		active=true,
 		onPick: (Null<ldtk.Json.TilesetRect>)->Void
 	) {
 		var jTileCanvas = new J('<canvas class="tile"></canvas>');
 
 		if( tilesetId!=null ) {
+			jTileCanvas.addClass("active");
 			var td = Editor.ME.project.defs.getTilesetDef(tilesetId);
-			if( td==null )
+
+			if( cur==null ) {
+				// No tile selected
 				jTileCanvas.addClass("empty");
+			}
 			else {
-				if( active )
-					jTileCanvas.addClass("active");
-
-				if( cur==null ) {
-					// No tile selected
-					jTileCanvas.addClass("empty");
-				}
-				else {
-					// Tile rect
-					jTileCanvas.attr("width", cur.w);
-					jTileCanvas.attr("height", cur.h);
-					var scale = 35 / M.fmax(cur.w, cur.h);
-					jTileCanvas.css("width", cur.w * scale );
-					jTileCanvas.css("height", cur.h * scale );
-					td.drawTileRectToCanvas(jTileCanvas, cur);
-				}
-				ui.Tip.attach(jTileCanvas, "Use LEFT click to pick a tile or RIGHT click to remove it.");
-
-				// Open picker
-				if( active )
-					jTileCanvas.mousedown( (ev:js.jquery.Event)->{
-						switch ev.button {
-							case 0:
-								var m = new ui.Modal();
-								m.addClass("singleTilePicker");
-
-								var tp = new ui.Tileset(m.jContent, td, RectOnly);
-								tp.useSavedSelections = false;
-								tp.setSelectedRect(cur);
-								tp.onSelectAnything = ()->{
-									onPick( tp.getSelectedRect() );
-									m.close();
-								}
-								tp.focusOnSelection(true);
-
-							case _:
-								onPick(null);
-						}
-					});
+				// Tile rect
+				jTileCanvas.attr("width", cur.w);
+				jTileCanvas.attr("height", cur.h);
+				var scale = 35 / M.fmax(cur.w, cur.h);
+				jTileCanvas.css("width", cur.w * scale );
+				jTileCanvas.css("height", cur.h * scale );
+				td.drawTileRectToCanvas(jTileCanvas, cur);
 			}
 
+			// Open picker
+			jTileCanvas.click( function(ev) {
+				var m = new ui.Modal();
+				m.addClass("singleTilePicker");
+
+				var tp = new ui.Tileset(m.jContent, td, RectOnly);
+				tp.useSavedSelections = false;
+				tp.setSelectedRect(cur);
+				tp.onSelectAnything = ()->{
+					onPick( tp.getSelectedRect() );
+					m.close();
+				}
+				tp.focusOnSelection(true);
+			});
 		}
 		else {
 			// Invalid tileset
@@ -1314,7 +1131,7 @@ class JsTools {
 			jRecall.appendTo(jWrapper);
 			jRecall.click( (ev:js.jquery.Event)->{
 				var ctx = new ui.modal.ContextMenu();
-				ctx.setAnchor( MA_JQuery(jRecall) );
+				ctx.positionNear(jRecall);
 				for( img in allImages )
 					ctx.add({
 						label: L.untranslated(img.fileName),
@@ -1356,73 +1173,11 @@ class JsTools {
 	}
 
 
-	public static inline function cleanUpSearchString(v:String) {
-		return v==null ? "" : StringTools.trim( v.toLowerCase() );
-	}
-
-
-	public static function searchStringMatches(searchQuery:String, target:String, softMatching=true) {
-		searchQuery = cleanUpSearchString(searchQuery);
-		target = cleanUpSearchString(target);
-		if( softMatching ) {
-			var si = 0;
-			var ti = 0;
-			while( si<searchQuery.length ) {
-				if( searchQuery.charCodeAt(si)==target.charCodeAt(ti)) {
-					si++;
-					ti++;
-				}
-				else {
-					ti++;
-					if( ti>=target.length )
-						return false;
-				}
-			}
-			return true;
-		}
-		else
-			return target.indexOf(searchQuery)>=0;
-	}
-
-
-	public static function createIntGridValue(project:data.Project, ?iv:data.DataTypes.IntGridValueDefEditor, ?rawIv:ldtk.Json.IntGridValueDef, showInt=true) : js.jquery.JQuery {
-		if( iv==null )
-			iv = {
-				identifier: rawIv.identifier,
-				value: rawIv.value,
-				color: dn.Col.parseHex(rawIv.color),
-				tile: rawIv.tile,
-				groupUid: 0,
-			}
-
-		var jVal = new J('<div class="intGridValue"></div>');
-		if( showInt )
-			jVal.append('<span class="index">${iv.value}</span>');
-
-		jVal.css({
-			color: C.intToHex( iv.color.toWhite(0.5) ),
-			borderColor: C.intToHex( iv.color.toWhite(0.2) ),
-			backgroundColor: C.intToHex( iv.color.toBlack(0.5) ),
-		});
-		if( iv.tile!=null ) {
-			jVal.addClass("hasIcon");
-			jVal.append( project.resolveTileRectAsHtmlImg(iv.tile) );
-			if( showInt )
-				jVal.find(".index").css({
-					color: iv.color.getAutoContrastCustom(0.4).toHex(),
-					backgroundColor: iv.color.toHex(),
-				});
-		}
-		return jVal;
-	}
-
 
 	public static function createOutOfBoundsRulePolicy(jSelect:js.jquery.JQuery, ld:data.def.LayerDef, curValue:Null<Int>, onChange:Int->Void) {
 		// Out-of-bounds policy
 		jSelect.empty();
-
-		var sourceLd = ld.autoSourceLd==null ? ld : ld.autoSourceLd;
-		var values = [null, 0].concat( sourceLd.getAllIntGridValues().map( iv->iv.value ) );
+		var values = [null, 0].concat( ld.getAllIntGridValues().map( iv->iv.value ) );
 		if( curValue<0 )
 			values.insert(0,-1);
 		for(v in values) {
@@ -1433,7 +1188,7 @@ class JsTools {
 				case v if(v<0): jOpt.text("-- Pick a value --");
 				case 0: jOpt.text("Empty cells");
 				case _:
-					var iv = sourceLd.getIntGridValueDef(v);
+					var iv = ld.getIntGridValueDef(v);
 					jOpt.text( Std.string(v) + (iv.identifier!=null ? ' - ${iv.identifier}' : "") );
 					jOpt.css({
 						backgroundColor: C.intToHex( C.toBlack(iv.color, 0.4) ),
@@ -1449,7 +1204,7 @@ class JsTools {
 
 		jSelect.val( curValue==null ? "null" : Std.string(curValue) );
 		if( curValue!=null && curValue>0 ) {
-			var iv = sourceLd.getIntGridValueDef(curValue);
+			var iv = ld.getIntGridValueDef(curValue);
 			jSelect.addClass("hasValue").css({
 				backgroundColor: C.intToHex( C.toBlack(iv.color, 0.4) ),
 				borderColor: C.intToHex( iv.color ),
@@ -1457,70 +1212,5 @@ class JsTools {
 		}
 
 		return jSelect;
-	}
-
-
-	public static function createColorButton(?jTarget:js.jquery.JQuery, curCol:dn.Col, ?usedColorsTag:String, ?defCol:dn.Col, allowNull=false, onPick:Null<dn.Col>->Void) {
-		var jColor = jTarget==null ? new J('<span></span>') : jTarget;
-		jColor.empty().off();
-		if( !jColor.hasClass("colorButton") )
-			jColor.addClass("colorButton");
-
-		// Current color
-		var jCur = new J('<span class="curColor"></span>');
-		jCur.appendTo(jColor);
-		jCur.append('<span class="icon color"></span>');
-
-		inline function _applyColor(c:dn.Col) {
-			if( c==null ) {
-				jCur.addClass("null");
-				if( defCol!=null )
-					jCur.css("background-color", defCol.toHex());
-			}
-			else
-				jCur.css("background-color", c.toHex());
-		}
-		_applyColor(curCol);
-
-		// Reset button
-		if( curCol!=defCol && curCol!=null && ( defCol!=null || allowNull && curCol!=null ) ) {
-			var jReset = new J('<button class="transparent reset"></button>');
-			jReset.appendTo(jColor);
-			jReset.append('<span class="icon reset"></span>');
-			jReset.click(_->{
-				curCol = allowNull ? null : defCol;
-				_applyColor(curCol);
-				onPick(curCol);
-			});
-		}
-
-		jCur.click(_->{
-			var cp = new ui.modal.dialog.ColorPicker(usedColorsTag, Const.getNicePalette(), jColor, curCol);
-			cp.onValidate = (c)->{
-				curCol = c;
-				_applyColor(curCol);
-				onPick(curCol);
-			}
-		});
-		return jColor;
-	}
-
-	public static function applyListCustomColor(jLi:js.jquery.JQuery, col:dn.Col, isActive:Bool) {
-		if( col==null ) {
-			jLi.removeClass("customColor");
-			return;
-		}
-
-		if( isActive ) {
-			jLi.css("background-color", col.toHex());
-			jLi.css("color", col.getAutoContrastCustom(0.5).toHex());
-			jLi.css("box-shadow", "-4px 0 0 white inset");
-		}
-		else {
-			jLi.css("background-color", col.toCssRgba(0.5));
-			jLi.css("color", col.toWhite(0.3).toHex());
-			jLi.css("box-shadow", "-4px 0 0 "+col.toHex()+" inset");
-		}
-		jLi.addClass("customColor");
 	}
 }

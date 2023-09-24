@@ -54,8 +54,7 @@ class HxEnum extends importer.ExternalEnum {
 					// Success!
 					parseds.push({
 						enumId: enumId,
-						tilesetUid: null,
-						values: values.map( id->{ valueId:id, data:{ color:null, tileRect:null } }),
+						values: values.map( id->{ valueId:id, data:{ color:null } }),
 					});
 				}
 			}

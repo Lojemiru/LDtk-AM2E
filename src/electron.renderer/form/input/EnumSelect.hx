@@ -4,31 +4,26 @@ class EnumSelect<T:EnumValue> extends form.Input<T> {
 	var enumRef : Enum<T>;
 	var allowNull : Bool;
 
-	public function new(j:js.jquery.JQuery, e:Enum<T>, allowNull=false, getter:Void->T, setter:T->Void, ?nameLocalizer:T->dn.data.GetText.LocaleString, ?keepOnly:T->Bool, disableFilteredOuts=false) {
+	public function new(j:js.jquery.JQuery, e:Enum<T>, allowNull=false, getter:Void->T, setter:T->Void, ?nameLocalizer:T->dn.data.GetText.LocaleString, ?filter:T->Bool) {
 		this.allowNull = allowNull;
 
 		super(j, getter, setter);
 
-		jInput.addClass("advanced");
 		enumRef = e;
 
 		jInput.empty();
 		for(k in Type.getEnumConstructs(enumRef)) {
-			var jOpt = new J("<option/>");
-
 			var t = enumRef.createByName(k);
 
-			if( keepOnly!=null && !keepOnly(t) )
-				if( disableFilteredOuts )
-					jOpt.prop("disabled", true);
-				else
-					continue;
+			if( filter!=null && !filter(t) )
+				continue;
 
-			jInput.append(jOpt);
-			jOpt.attr("value",k);
-			jOpt.text( nameLocalizer==null ? k : nameLocalizer(t) );
+			var opt = new J("<option/>");
+			jInput.append(opt);
+			opt.attr("value",k);
+			opt.text( nameLocalizer==null ? k : nameLocalizer(t) );
 			if( t==getter() )
-				jOpt.attr("selected","selected");
+				opt.attr("selected","selected");
 		}
 
 		// "None" option
