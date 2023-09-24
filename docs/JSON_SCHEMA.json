@@ -1,9 +1,9 @@
 {
 	"description": "This file is a JSON schema of files created by LDtk level editor (https://ldtk.io).",
-	"title": "LDtk 1.2.6 JSON schema",
+	"title": "LDtk 1.4.0 JSON schema",
 	"$schema": "https://json-schema.org/draft-07/schema#",
 	"$ref": "#/LdtkJsonRoot",
-	"version": "1.2.6",
+	"version": "1.4.0",
 	"LdtkJsonRoot": {
 		"description": "This is the root of any Project JSON file. It contains:  - the project settings, - an array of levels, - a group of definitions (that can probably be safely ignored for most users).",
 		"title": "LDtk Json root",
@@ -20,6 +20,8 @@
 			"backupLimit",
 			"backupOnSave",
 			"customCommands",
+			"defaultEntityHeight",
+			"defaultEntityWidth",
 			"defaultGridSize",
 			"defaultLevelBgColor",
 			"defaultPivotX",
@@ -38,6 +40,12 @@
 		"properties": {
 			"backupLimit": {
 				"description": "Number of backup files to keep, if the `backupOnSave` is TRUE",
+				"type": [
+					"integer"
+				]
+			},
+			"defaultEntityWidth": {
+				"description": "Default width for new entities",
 				"type": [
 					"integer"
 				]
@@ -74,7 +82,7 @@
 				]
 			},
 			"worlds": {
-				"description": "This array is not used yet in current LDtk version (so, for now, it's always empty).<br/><br/>In a later update, it will be possible to have multiple Worlds in a single project, each containing multiple Levels.<br/><br/>What will change when \"Multiple worlds\" support will be added to LDtk:<br/><br/> - in current version, a LDtk project file can only contain a single world with multiple levels in it. In this case, levels and world layout related settings are stored in the root of the JSON.<br/> - after the \"Multiple worlds\" update, there will be a `worlds` array in root, each world containing levels and layout settings. Basically, it's pretty much only about moving the `levels` array to the `worlds` array, along with world layout related values (eg. `worldGridWidth` etc).<br/><br/>If you want to start supporting this future update easily, please refer to this documentation: https://github.com/deepnight/ldtk/issues/231",
+				"description": "This array will be empty, unless you enable the Multi-Worlds in the project advanced settings.<br/><br/> - in current version, a LDtk project file can only contain a single world with multiple levels in it. In this case, levels and world layout related settings are stored in the root of the JSON.<br/> - with \"Multi-worlds\" enabled, there will be a `worlds` array in root, each world containing levels and layout settings. Basically, it's pretty much only about moving the `levels` array to the `worlds` array, along with world layout related values (eg. `worldGridWidth` etc).<br/><br/>If you want to start supporting this future update easily, please refer to this documentation: https://github.com/deepnight/ldtk/issues/231",
 				"items": {
 					"$ref": "#/otherTypes/World"
 				},
@@ -241,6 +249,9 @@
 					"AutoLayerRuleGroup": {
 						"$ref": "#/otherTypes/AutoLayerRuleGroup"
 					},
+					"IntGridValueGroupDef": {
+						"$ref": "#/otherTypes/IntGridValueGroupDef"
+					},
 					"IntGridValueInstance": {
 						"$ref": "#/otherTypes/IntGridValueInstance"
 					},
@@ -319,6 +330,12 @@
 					"string"
 				]
 			},
+			"defaultEntityHeight": {
+				"description": "Default height for new entities",
+				"type": [
+					"integer"
+				]
+			},
 			"defaultPivotX": {
 				"description": "Default X pivot (0 to 1) for new entities",
 				"type": [
@@ -361,6 +378,13 @@
 				"description": "If TRUE, the exported PNGs will include the level background (color or image).",
 				"type": [
 					"boolean"
+				]
+			},
+			"backupRelPath": {
+				"description": "Target relative path to store backup files",
+				"type": [
+					"string",
+					"null"
 				]
 			}
 		},
@@ -481,6 +505,8 @@
 				"__pivot",
 				"__smartColor",
 				"__tags",
+				"__worldX",
+				"__worldY",
 				"defUid",
 				"fieldInstances",
 				"height",
@@ -530,6 +556,18 @@
 					},
 					"type": [
 						"array"
+					]
+				},
+				"__worldX": {
+					"description": "X world coordinate in pixels",
+					"type": [
+						"integer"
+					]
+				},
+				"__worldY": {
+					"description": "Y world coordinate in pixels",
+					"type": [
+						"integer"
 					]
 				},
 				"__smartColor": {
@@ -705,6 +743,7 @@
 			"title": "Auto-layer rule definition",
 			"required": [
 				"active",
+				"alpha",
 				"breakOnMatch",
 				"chance",
 				"checker",
@@ -720,6 +759,12 @@
 				"size",
 				"tileIds",
 				"tileMode",
+				"tileRandomXMax",
+				"tileRandomXMin",
+				"tileRandomYMax",
+				"tileRandomYMin",
+				"tileXOffset",
+				"tileYOffset",
 				"uid",
 				"xModulo",
 				"xOffset",
@@ -770,6 +815,12 @@
 						"array"
 					]
 				},
+				"tileRandomXMin": {
+					"description": "Min random offset for X tile pos",
+					"type": [
+						"integer"
+					]
+				},
 				"checker": {
 					"description": "Checker mode Possible values: `None`, `Horizontal`, `Vertical`",
 					"enum": [
@@ -793,6 +844,18 @@
 					},
 					"type": [
 						"array"
+					]
+				},
+				"alpha": {
+					"description": "",
+					"type": [
+						"number"
+					]
+				},
+				"tileXOffset": {
+					"description": "Tile X offset",
+					"type": [
+						"integer"
 					]
 				},
 				"xModulo": {
@@ -819,6 +882,12 @@
 						"boolean"
 					]
 				},
+				"tileYOffset": {
+					"description": "Tile Y offset",
+					"type": [
+						"integer"
+					]
+				},
 				"uid": {
 					"description": "Unique Int identifier",
 					"type": [
@@ -837,6 +906,18 @@
 						"integer"
 					]
 				},
+				"tileRandomYMax": {
+					"description": "Max random offset for Y tile pos",
+					"type": [
+						"integer"
+					]
+				},
+				"tileRandomYMin": {
+					"description": "Min random offset for Y tile pos",
+					"type": [
+						"integer"
+					]
+				},
 				"tileMode": {
 					"description": "Defines how tileIds array is used Possible values: `Single`, `Stamp`",
 					"enum": [
@@ -848,6 +929,12 @@
 					"description": "If TRUE, allow rule to be matched by flipping its pattern vertically",
 					"type": [
 						"boolean"
+					]
+				},
+				"tileRandomXMax": {
+					"description": "Max random offset for X tile pos",
+					"type": [
+						"integer"
 					]
 				},
 				"pivotY": {
@@ -897,6 +984,7 @@
 				"editorCutLongValues",
 				"editorDisplayMode",
 				"editorDisplayPos",
+				"editorDisplayScale",
 				"editorLinkStyle",
 				"editorShowInWorld",
 				"symmetricalRef",
@@ -916,6 +1004,12 @@
 						"null"
 					]
 				},
+				"editorDisplayScale": {
+					"description": "",
+					"type": [
+						"number"
+					]
+				},
 				"useForSmartColor": {
 					"description": "If TRUE, the color associated with this field will override the Entity or Level default color in the editor UI. For Enum fields, this would be the color associated to their values.",
 					"type": [
@@ -929,11 +1023,12 @@
 					]
 				},
 				"allowedRefs": {
-					"description": "Possible values: `Any`, `OnlySame`, `OnlyTags`",
+					"description": "Possible values: `Any`, `OnlySame`, `OnlyTags`, `OnlySpecificEntity`",
 					"enum": [
 						"Any",
 						"OnlySame",
-						"OnlyTags"
+						"OnlyTags",
+						"OnlySpecificEntity"
 					]
 				},
 				"editorAlwaysShow": {
@@ -970,12 +1065,13 @@
 					]
 				},
 				"editorDisplayMode": {
-					"description": "Possible values: `Hidden`, `ValueOnly`, `NameAndValue`, `EntityTile`, `Points`, `PointStar`, `PointPath`, `PointPathLoop`, `RadiusPx`, `RadiusGrid`, `ArrayCountWithLabel`, `ArrayCountNoLabel`, `RefLinkBetweenPivots`, `RefLinkBetweenCenters`",
+					"description": "Possible values: `Hidden`, `ValueOnly`, `NameAndValue`, `EntityTile`, `LevelTile`, `Points`, `PointStar`, `PointPath`, `PointPathLoop`, `RadiusPx`, `RadiusGrid`, `ArrayCountWithLabel`, `ArrayCountNoLabel`, `RefLinkBetweenPivots`, `RefLinkBetweenCenters`",
 					"enum": [
 						"Hidden",
 						"ValueOnly",
 						"NameAndValue",
 						"EntityTile",
+						"LevelTile",
 						"Points",
 						"PointStar",
 						"PointPath",
@@ -986,6 +1082,13 @@
 						"ArrayCountNoLabel",
 						"RefLinkBetweenPivots",
 						"RefLinkBetweenCenters"
+					]
+				},
+				"editorDisplayColor": {
+					"description": "",
+					"type": [
+						"string",
+						"null"
 					]
 				},
 				"canBeNull": {
@@ -1004,6 +1107,13 @@
 					"description": "User defined documentation for this field to provide help/tips to level designers about accepted values.",
 					"type": [
 						"string",
+						"null"
+					]
+				},
+				"allowedRefsEntityUid": {
+					"description": "",
+					"type": [
+						"integer",
 						"null"
 					]
 				},
@@ -1215,6 +1325,13 @@
 						"null"
 					]
 				},
+				"maxHeight": {
+					"description": "Max pixel height (only applies if the entity is resizable on Y)",
+					"type": [
+						"integer",
+						"null"
+					]
+				},
 				"limitScope": {
 					"description": "If TRUE, the maxCount is a \"per world\" limit, if FALSE, it's a \"per level\". Possible values: `PerLayer`, `PerLevel`, `PerWorld`",
 					"enum": [
@@ -1241,6 +1358,13 @@
 						"boolean"
 					]
 				},
+				"minHeight": {
+					"description": "Min pixel height (only applies if the entity is resizable on Y)",
+					"type": [
+						"integer",
+						"null"
+					]
+				},
 				"keepAspectRatio": {
 					"description": "Only applies to entities resizable on both X/Y. If TRUE, the entity instance width/height will keep the same aspect ratio as the definition.",
 					"type": [
@@ -1251,6 +1375,13 @@
 					"description": "Base entity color",
 					"type": [
 						"string"
+					]
+				},
+				"minWidth": {
+					"description": "Min pixel width (only applies if the entity is resizable on X)",
+					"type": [
+						"integer",
+						"null"
 					]
 				},
 				"tileRect": {
@@ -1325,6 +1456,19 @@
 						"boolean"
 					]
 				},
+				"uiTileRect": {
+					"description": "This tile overrides the one defined in `tileRect` in the UI",
+					"oneOf": [
+						{
+							"type": [
+								"null"
+							]
+						},
+						{
+							"$ref": "#/otherTypes/TilesetRect"
+						}
+					]
+				},
 				"uid": {
 					"description": "Unique Int identifier",
 					"type": [
@@ -1335,6 +1479,13 @@
 					"description": "",
 					"type": [
 						"number"
+					]
+				},
+				"maxWidth": {
+					"description": "Max pixel width (only applies if the entity is resizable on X)",
+					"type": [
+						"integer",
+						"null"
 					]
 				},
 				"resizableY": {
@@ -1429,10 +1580,30 @@
 						"null"
 					]
 				},
+				"color": {
+					"description": "",
+					"type": [
+						"string",
+						"null"
+					]
+				},
 				"isOptional": {
 					"description": "",
 					"type": [
 						"boolean"
+					]
+				},
+				"icon": {
+					"description": "",
+					"oneOf": [
+						{
+							"type": [
+								"null"
+							]
+						},
+						{
+							"$ref": "#/otherTypes/TilesetRect"
+						}
 					]
 				},
 				"usesWizard": {
@@ -1460,6 +1631,39 @@
 					},
 					"type": [
 						"array"
+					]
+				}
+			},
+			"type": [
+				"object"
+			]
+		},
+		"IntGridValueGroupDef": {
+			"description": "IntGrid value group definition",
+			"title": "IntGrid value group definition",
+			"required": [
+				"uid"
+			],
+			"additionalProperties": false,
+			"properties": {
+				"color": {
+					"description": "User defined color",
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"uid": {
+					"description": "Group unique ID",
+					"type": [
+						"integer"
+					]
+				},
+				"identifier": {
+					"description": "User defined string identifier",
+					"type": [
+						"string",
+						"null"
 					]
 				}
 			},
@@ -1516,7 +1720,7 @@
 					]
 				},
 				"dir": {
-					"description": "A single lowercase character tipping on the level location (`n`orth, `s`outh, `w`est, `e`ast).",
+					"description": "A single lowercase character tipping on the level location (`n`orth, `s`outh, `w`est, `e`ast).<br/>  Since 1.4.0, this character value can also be `<` (neighbour depth is lower), `>` (neighbour depth is greater) or `o` (levels overlap and share the same world depth).",
 					"type": [
 						"string"
 					]
@@ -1728,7 +1932,7 @@
 			]
 		},
 		"World": {
-			"description": "**IMPORTANT**: this type is not used *yet* in current LDtk version. It's only presented here as a preview of a planned feature.  A World contains multiple levels, and it has its own layout settings.",
+			"description": "**IMPORTANT**: this type is available as a preview. You can rely on it to update your importers, for when it will be officially available.  A World contains multiple levels, and it has its own layout settings.",
 			"title": "World",
 			"required": [
 				"identifier",
@@ -2024,7 +2228,7 @@
 			"additionalProperties": false,
 			"properties": {
 				"tileId": {
-					"description": "The optional ID of the tile",
+					"description": "**WARNING**: this deprecated value is no longer exported since version 1.4.0  Replaced by: `tileRect`",
 					"type": [
 						"integer",
 						"null"
@@ -2036,6 +2240,19 @@
 						"integer"
 					]
 				},
+				"tileRect": {
+					"description": "Optional tileset rectangle to represents this value",
+					"oneOf": [
+						{
+							"type": [
+								"null"
+							]
+						},
+						{
+							"$ref": "#/otherTypes/TilesetRect"
+						}
+					]
+				},
 				"id": {
 					"description": "Enum value",
 					"type": [
@@ -2043,7 +2260,7 @@
 					]
 				},
 				"__tileSrcRect": {
-					"description": "An array of 4 Int values that refers to the tile in the tileset image: `[ x, y, width, height ]`",
+					"description": "**WARNING**: this deprecated value is no longer exported since version 1.4.0  Replaced by: `tileRect`",
 					"items": {
 						"type": [
 							"integer"
@@ -2063,6 +2280,7 @@
 			"description": "This structure represents a single tile from a given Tileset.",
 			"title": "Tile instance",
 			"required": [
+				"a",
 				"f",
 				"px",
 				"src",
@@ -2099,6 +2317,12 @@
 						"array"
 					]
 				},
+				"a": {
+					"description": "Alpha/opacity of the tile (0-1, defaults to 1)",
+					"type": [
+						"number"
+					]
+				},
 				"f": {
 					"description": "\"Flip bits\", a 2-bits integer to represent the mirror transformations of the tile.<br/>   - Bit 0 = X flip<br/>   - Bit 1 = Y flip<br/>   Examples: f=0 (no flip), f=1 (X flip only), f=2 (Y flip only), f=3 (both flips)",
 					"type": [
@@ -2129,6 +2353,7 @@
 				"gridSize",
 				"identifier",
 				"intGridValues",
+				"intGridValuesGroups",
 				"parallaxFactorX",
 				"parallaxFactorY",
 				"parallaxScaling",
@@ -2143,6 +2368,7 @@
 				"hideFieldsWhenInactive",
 				"hideInList",
 				"inactiveOpacity",
+				"renderInWorldView",
 				"requiredTags",
 				"tilePivotX",
 				"tilePivotY",
@@ -2192,6 +2418,13 @@
 						"integer"
 					]
 				},
+				"uiColor": {
+					"description": "User defined color for the UI",
+					"type": [
+						"string",
+						"null"
+					]
+				},
 				"doc": {
 					"description": "User defined documentation for this element to provide help/tips to level designers.",
 					"type": [
@@ -2230,6 +2463,21 @@
 					"description": "If true (default), a layer with a parallax factor will also be scaled up/down accordingly.",
 					"type": [
 						"boolean"
+					]
+				},
+				"renderInWorldView": {
+					"description": "If TRUE, the content of this layer will be used when rendering levels in a simplified way for the world view",
+					"type": [
+						"boolean"
+					]
+				},
+				"intGridValuesGroups": {
+					"description": "Group informations for IntGrid values",
+					"items": {
+						"$ref": "#/otherTypes/IntGridValueGroupDef"
+					},
+					"type": [
+						"array"
 					]
 				},
 				"inactiveOpacity": {
@@ -2411,7 +2659,7 @@
 			"additionalProperties": false,
 			"properties": {
 				"__neighbours": {
-					"description": "An array listing all other levels touching this one on the world map.<br/>  Only relevant for world layouts where level spatial positioning is manual (ie. GridVania, Free). For Horizontal and Vertical layouts, this array is always empty.",
+					"description": "An array listing all other levels touching this one on the world map. Since 1.4.0, this includes levels that overlap in the same world layer, or in nearby world layers.<br/>  Only relevant for world layouts where level spatial positioning is manual (ie. GridVania, Free). For Horizontal and Vertical layouts, this array is always empty.",
 					"items": {
 						"$ref": "#/otherTypes/NeighbourLevel"
 					},
@@ -2458,12 +2706,13 @@
 					]
 				},
 				"bgPos": {
-					"description": "An enum defining the way the background image (if any) is positioned on the level. See `__bgPos` for resulting position info. Possible values: &lt;`null`&gt;, `Unscaled`, `Contain`, `Cover`, `CoverDirty`",
+					"description": "An enum defining the way the background image (if any) is positioned on the level. See `__bgPos` for resulting position info. Possible values: &lt;`null`&gt;, `Unscaled`, `Contain`, `Cover`, `CoverDirty`, `Repeat`",
 					"enum": [
 						"Unscaled",
 						"Contain",
 						"Cover",
 						"CoverDirty",
+						"Repeat",
 						null
 					]
 				},
@@ -2692,10 +2941,24 @@
 			"title": "IntGrid value definition",
 			"required": [
 				"color",
+				"groupUid",
 				"value"
 			],
 			"additionalProperties": false,
 			"properties": {
+				"tile": {
+					"description": "",
+					"oneOf": [
+						{
+							"type": [
+								"null"
+							]
+						},
+						{
+							"$ref": "#/otherTypes/TilesetRect"
+						}
+					]
+				},
 				"color": {
 					"description": "",
 					"type": [
@@ -2711,6 +2974,12 @@
 				},
 				"value": {
 					"description": "The IntGrid value itself",
+					"type": [
+						"integer"
+					]
+				},
+				"groupUid": {
+					"description": "Parent group identifier (0 if none)",
 					"type": [
 						"integer"
 					]

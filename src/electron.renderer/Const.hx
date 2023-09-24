@@ -12,6 +12,10 @@ class Const {
 			].join("-");
 	}
 
+	public static function getAppVersionObj() {
+		return new dn.Version(APP_VERSION);
+	}
+
 	public static function getAppBuildId() : Float {
 		return Std.int(  dn.MacroTools.getBuildTimeStampSeconds() / (60*60)  );
 	}
@@ -65,6 +69,7 @@ class Const {
 	public static var ISSUES_URL = "https://github.com/deepnight/ldtk/issues";
 	public static var REPORT_BUG_URL = "https://github.com/deepnight/ldtk/issues/new";
 	public static var GITHUB_SPONSOR_URL = "https://github.com/sponsors/deepnight";
+	public static var STEAM_URL = LDTK_DOMAIN+"/go/steam";
 	public static var JSON_DOC_URL = LDTK_DOMAIN+"/json";
 	public static var JSON_SCHEMA_URL = LDTK_DOMAIN+"/files/JSON_SCHEMA.json";
 
@@ -191,7 +196,7 @@ class Const {
 	}
 
 	public static var AUTO_LAYER_ANYTHING = 1000001;
-	public static var MAX_AUTO_PATTERN_SIZE = 7;
+	public static var MAX_AUTO_PATTERN_SIZE = 9;
 	#end
 
 

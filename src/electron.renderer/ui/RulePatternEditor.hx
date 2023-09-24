@@ -112,16 +112,15 @@ class RulePatternEditor {
 				if( previewMode ) {
 					var td = Editor.ME.curLayerInstance.getTilesetDef();
 					if( td!=null ) {
-						var jTile = JsTools.createTile(td, rule.tileIds[0], 32);
+						var jTile = td.createCanvasFromTileId(rule.tileIds[0], 32);
 						jCell.append(jTile);
-						jCell.addClass("tilePreview");
 						if( rule.tileIds.length>1 )
 							jTile.addClass("multi");
 					}
 				}
 			}
 
-			// Cell color
+			// Cell value (color + tile)
 			if( !isCenter || !previewMode ) {
 				var ruleValue = rule.get(cx,cy);
 				if( ruleValue!=0 ) {
@@ -132,8 +131,20 @@ class RulePatternEditor {
 							jCell.addClass("anything");
 							addExplain(jCell, 'This cell should contain any IntGrid value to match.');
 						}
+						else if( intGridVal>999 ) {
+							var g = sourceDef.getIntGridGroup( Std.int(intGridVal/1000)-1 );
+							jCell.addClass("group");
+							if( g.color!=null ) {
+								jCell.css("background-color", g.color.toCssRgba(0.9));
+								jCell.css("outline-color", g.color.toWhite(0.6).toHex());
+							}
+							addExplain(jCell, 'This cell should contain any IntGrid value from the group ${g.displayName} to match.');
+						}
 						else if( sourceDef.hasIntGridValue(intGridVal) ) {
 							jCell.css("background-color", C.intToHex( sourceDef.getIntGridValueDef(intGridVal).color ) );
+							var iv = sourceDef.getIntGridValueDef(intGridVal);
+							if( iv.tile!=null )
+								jCell.prepend( sourceDef._project.resolveTileRectAsHtmlImg(iv.tile).addClass("valueIcon") );
 							addExplain(jCell, 'This cell should contain "${sourceDef.getIntGridValueDisplayName(intGridVal)}" to match.');
 						}
 						else
@@ -149,8 +160,20 @@ class RulePatternEditor {
 							jCell.addClass("anything");
 							addExplain(jCell, 'This cell should NOT contain any IntGrid value to match.');
 						}
+						else if( intGridVal>999 ) {
+							var g = sourceDef.getIntGridGroup( Std.int(intGridVal/1000)-1 );
+							jCell.addClass("group");
+							if( g.color!=null ) {
+								jCell.css("background-color", g.color.toCssRgba(0.9));
+								jCell.css("outline-color", g.color.toWhite(0.6).toHex());
+							}
+							addExplain(jCell, 'This cell should NOT contain any IntGrid value from the group ${g.displayName} to match.');
+						}
 						else if( sourceDef.hasIntGridValue(intGridVal) ) {
 							jCell.css("background-color", C.intToHex( sourceDef.getIntGridValueDef(intGridVal).color ) );
+							var iv = sourceDef.getIntGridValueDef(intGridVal);
+							if( iv.tile!=null )
+								jCell.prepend( sourceDef._project.resolveTileRectAsHtmlImg(iv.tile).addClass("valueIcon") );
 							addExplain(jCell, 'This cell should NOT contain "${sourceDef.getIntGridValueDisplayName(intGridVal)}" to match.');
 						}
 						else

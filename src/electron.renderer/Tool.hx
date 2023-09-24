@@ -13,7 +13,7 @@ class Tool<T> extends dn.Process {
 	var curLayerInstance(get,never) : data.inst.LayerInstance; inline function get_curLayerInstance() return Editor.ME.curLayerInstance;
 
 	var jPalette(get,never) : J; inline function get_jPalette() return editor.jPalette;
-	var jOptions(get,never) : J; inline function get_jOptions() return editor.jMainPanel.find("#toolOptions");
+	public var jOptions(get,never) : J; inline function get_jOptions() return editor.jMainPanel.find("#toolOptions");
 
 	var clickingOutsideBounds = false;
 	var curMode : Null<ToolEditMode> = null;
@@ -287,18 +287,29 @@ class Tool<T> extends dn.Process {
 
 	function onBeforeToolActivation() {}
 
+	override function pause() {
+		super.pause();
+		onToolDeactivation();
+	}
+
+	public final function onToolDeactivation() {
+		if( palette!=null )
+			palette.onHide();
+	}
+
 	public final function onToolActivation() {
 		onBeforeToolActivation();
 
 		resume();
+		initToolOptions();
 
 		jPalette.empty();
 		if( palette!=null ) {
 			// Show palette
 			palette.jContent.appendTo( jPalette );
 			palette.render();
+			palette.onShow();
 		}
-		initOptionForm();
 	}
 
 	function createToolPalette() : Null<ui.ToolPalette> {
@@ -327,14 +338,15 @@ class Tool<T> extends dn.Process {
 	}
 
 	public function initPalette() {
+		initToolOptions();
 		palette = createToolPalette();
 		if( palette!=null )
 			palette.render();
-		initOptionForm();
 	}
 
-	function initOptionForm() {
+	function initToolOptions() {
 		jOptions.empty();
+		editor.jMainPanel.find("#paletteOptions").empty();
 	}
 
 

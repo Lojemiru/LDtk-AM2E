@@ -4,6 +4,7 @@ class EditTilesetDefs extends ui.modal.Panel {
 	var jList : js.jquery.JQuery;
 	var jForm : js.jquery.JQuery;
 	public var curTd : Null<data.def.TilesetDef>;
+	var search : QuickSearch;
 
 
 	public function new(?selectedDef:data.def.TilesetDef) {
@@ -22,6 +23,10 @@ class EditTilesetDefs extends ui.modal.Panel {
 			jForm.find("input").first().focus().select();
 			jForm.find(".imagePicker .pick").click();
 		});
+
+		// Create quick search
+		search = new ui.QuickSearch( jList );
+		search.jWrapper.appendTo( jContent.find(".search") );
 
 		selectTileset(selectedDef!=null ? selectedDef : project.defs.tilesets[0]);
 	}
@@ -188,8 +193,28 @@ class EditTilesetDefs extends ui.modal.Panel {
 		i.onChange = editor.ge.emit.bind( TilesetDefChanged(curTd) );
 
 		var i = Input.linkToHtmlInput( curTd.tileGridSize, jForm.find("input[name=tilesetGridSize]") );
-		i.linkEvent( TilesetDefChanged(curTd) );
 		i.setBounds(2, curTd.getMaxTileGridSize());
+		var oldGrid = curTd.tileGridSize;
+		i.onChange = ()->{
+			new LastChance(L.t._("Tileset grid changed"), project);
+
+			var result = curTd.remapAllTileIdsAfterGridChange(oldGrid);
+			editor.ge.emit(TilesetDefChanged(curTd));
+
+			switch result {
+				case Ok:
+					N.msg("No change");
+
+				case RemapLoss:
+					new ui.modal.dialog.Warning(L.t._("The new grid size is larger than the previous one.\nSome tiles may have been lost in the remapping process."));
+
+				case RemapSuccessful:
+					new ui.modal.dialog.Message(L.t._("All tiles were successfully remapped."));
+
+				case _:
+					N.error("Unknown remapping result: "+result);
+			}
+		}
 
 		var i = Input.linkToHtmlInput( curTd.spacing, jForm.find("input[name=spacing]") );
 		i.linkEvent( TilesetDefChanged(curTd) );
@@ -286,9 +311,11 @@ class EditTilesetDefs extends ui.modal.Panel {
 		for( group in tagGroups) {
 			// Tag name
 			if( tagGroups.length>1 ) {
-				var jSep = new J('<li class="title fixed"/>');
+				var jSep = new J('<li class="title collapser"/>');
 				jSep.text( group.tag==null ? L._Untagged() : group.tag );
 				jSep.appendTo(jList);
+				jSep.attr("id", project.iid+"_tileset_tag_"+group.tag);
+				jSep.attr("default", "open");
 
 				// Rename
 				if( group.tag!=null ) {
@@ -308,7 +335,7 @@ class EditTilesetDefs extends ui.modal.Panel {
 			jSubList.appendTo(jLi);
 
 			for(td in group.all) {
-				var jLi = new J("<li/>");
+				var jLi = new J('<li class="draggable"/>');
 				jSubList.append(jLi);
 
 				jLi.append('<span class="name">'+td.identifier+'</span>');
@@ -371,9 +398,11 @@ class EditTilesetDefs extends ui.modal.Panel {
 				var moved = project.defs.sortTilesetDef(fromIdx, toIdx);
 				selectTileset(moved);
 				editor.ge.emit(TilesetDefSorted);
-			});
+			}, { onlyDraggables:true });
 		}
 
+		JsTools.parseComponents(jList);
 		checkBackup();
+		search.run();
 	}
 }

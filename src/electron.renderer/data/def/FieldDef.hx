@@ -18,8 +18,10 @@ class FieldDef {
 	public var arrayMinLength : Null<Int>;
 	public var arrayMaxLength : Null<Int>;
 	public var editorDisplayMode : ldtk.Json.FieldDisplayMode;
+	public var editorDisplayScale : Float;
 	public var editorDisplayPos : ldtk.Json.FieldDisplayPosition;
 	public var editorLinkStyle : ldtk.Json.FieldLinkStyle;
+	public var editorDisplayColor : Null<dn.Col>;
 	public var editorShowInWorld : Bool;
 	public var editorAlwaysShow: Bool;
 	public var editorTextPrefix : Null<String>;
@@ -43,6 +45,7 @@ class FieldDef {
 	public var autoChainRef : Bool;
 	public var allowOutOfLevelRef : Bool;
 	public var allowedRefs : ldtk.Json.EntityReferenceTarget;
+	public var allowedRefsEntityUid : Null<Int>;
 	public var allowedRefTags : Tags;
 	public var tilesetUid : Null<Int>;
 
@@ -56,6 +59,7 @@ class FieldDef {
 		isArray = array;
 		editorDisplayMode = Hidden;
 		editorDisplayPos = Above;
+		editorDisplayScale = 1;
 		editorLinkStyle = switch type {
 			case F_EntityRef: CurvedArrow;
 			case _: StraightArrow;
@@ -134,11 +138,13 @@ class FieldDef {
 		o.arrayMinLength = JsonTools.readNullableInt(json.arrayMinLength);
 		o.arrayMaxLength = JsonTools.readNullableInt(json.arrayMaxLength);
 		o.editorDisplayMode = JsonTools.readEnum(ldtk.Json.FieldDisplayMode, json.editorDisplayMode, false, Hidden);
+		o.editorDisplayScale = JsonTools.readFloat(json.editorDisplayScale, 1);
 		o.editorDisplayPos = JsonTools.readEnum(ldtk.Json.FieldDisplayPosition, json.editorDisplayPos, false, Above);
 		o.editorLinkStyle = JsonTools.readEnum(ldtk.Json.FieldLinkStyle, json.editorLinkStyle, false, switch o.type {
 			case F_EntityRef: CurvedArrow;
 			case _: StraightArrow;
 		});
+		o.editorDisplayColor = JsonTools.readColor(json.editorDisplayColor, true);
 		o.editorAlwaysShow = JsonTools.readBool(json.editorAlwaysShow, false);
 		o.editorShowInWorld = JsonTools.readBool(json.editorShowInWorld, true);
 		o.editorCutLongValues = JsonTools.readBool(json.editorCutLongValues, true);
@@ -153,6 +159,7 @@ class FieldDef {
 		o.autoChainRef = JsonTools.readBool(json.autoChainRef, true);
 		o.allowOutOfLevelRef = JsonTools.readBool(json.allowOutOfLevelRef, true);
 		o.allowedRefs = JsonTools.readEnum(ldtk.Json.EntityReferenceTarget, json.allowedRefs, false, OnlySame);
+		o.allowedRefsEntityUid = JsonTools.readNullableInt(json.allowedRefsEntityUid);
 		o.allowedRefTags = Tags.fromJson(json.allowedRefTags);
 		o.tilesetUid = JsonTools.readNullableInt(json.tilesetUid);
 
@@ -176,8 +183,10 @@ class FieldDef {
 			arrayMinLength: arrayMinLength,
 			arrayMaxLength: arrayMaxLength,
 			editorDisplayMode: JsonTools.writeEnum(editorDisplayMode, false),
+			editorDisplayScale: JsonTools.writeFloat(editorDisplayScale),
 			editorDisplayPos: JsonTools.writeEnum(editorDisplayPos, false),
 			editorLinkStyle: JsonTools.writeEnum(editorLinkStyle, false),
+			editorDisplayColor: JsonTools.writeColor(editorDisplayColor, true),
 			editorAlwaysShow: editorAlwaysShow,
 			editorShowInWorld: editorShowInWorld,
 			editorCutLongValues: editorCutLongValues,
@@ -194,6 +203,7 @@ class FieldDef {
 			autoChainRef: autoChainRef,
 			allowOutOfLevelRef: allowOutOfLevelRef,
 			allowedRefs: JsonTools.writeEnum(allowedRefs, false),
+			allowedRefsEntityUid: allowedRefsEntityUid,
 			allowedRefTags: allowedRefTags.toJson(),
 			tilesetUid: tilesetUid,
 		}
@@ -573,6 +583,7 @@ class FieldDef {
 			case Any: true;
 			case OnlySame: sourceEi.defUid==targetEd.uid;
 			case OnlyTags: targetEd.tags.hasAnyTagFoundIn(allowedRefTags);
+			case OnlySpecificEntity: targetEd.uid==allowedRefsEntityUid;
 		}
 	}
 
@@ -700,11 +711,17 @@ class FieldDef {
 	public function tidy(p:data.Project) {
 		_project = p;
 
+		if( editorDisplayScale==0 ) {
+			App.LOG.add("tidy", "Fixed 0-scale in FieldDef "+toString());
+			editorDisplayScale = 1;
+		}
+
 		if( isEnum() && defaultOverride!=null ) {
-			App.LOG.add("tidy", "Lost default enum value in FieldDef "+toString());
 			var v = getEnumDefault();
-			if( v==null )
+			if( v==null ) {
+				App.LOG.add("tidy", "Lost default enum value in FieldDef "+toString());
 				setDefault(null);
+			}
 		}
 
 		if( tilesetUid!=null && p.defs.getTilesetDef(tilesetUid)==null ) {
