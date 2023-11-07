@@ -508,6 +508,7 @@
 				"__worldX",
 				"__worldY",
 				"defUid",
+				"f",
 				"fieldInstances",
 				"height",
 				"iid",
@@ -609,6 +610,12 @@
 				},
 				"height": {
 					"description": "Entity height in pixels. For non-resizable entities, it will be the same as Entity definition.",
+					"type": [
+						"integer"
+					]
+				},
+				"f": {
+					"description": "Two-bit integer. First bit determines whether or not this EntityInstance is flipped horizontally, the second bit vertically.",
 					"type": [
 						"integer"
 					]
@@ -1279,6 +1286,7 @@
 			"title": "Entity definition",
 			"required": [
 				"color",
+				"flipAroundPivot",
 				"height",
 				"identifier",
 				"nineSliceBorders",
@@ -1290,6 +1298,8 @@
 				"exportToToc",
 				"fieldDefs",
 				"fillOpacity",
+				"flippableX",
+				"flippableY",
 				"hollow",
 				"keepAspectRatio",
 				"limitBehavior",
@@ -1425,6 +1435,12 @@
 						"NineSlice"
 					]
 				},
+				"flippableY": {
+					"description": "If TRUE, the entity instances will be flippable vertically",
+					"type": [
+						"boolean"
+					]
+				},
 				"limitBehavior": {
 					"description": "Possible values: `DiscardOldOnes`, `PreventAdding`, `MoveLastOne`",
 					"enum": [
@@ -1481,6 +1497,12 @@
 						"number"
 					]
 				},
+				"flippableX": {
+					"description": "If TRUE, the entity instances will be flippable horizontally",
+					"type": [
+						"boolean"
+					]
+				},
 				"maxWidth": {
 					"description": "Max pixel width (only applies if the entity is resizable on X)",
 					"type": [
@@ -1510,6 +1532,12 @@
 					"description": "Pixel height",
 					"type": [
 						"integer"
+					]
+				},
+				"flipAroundPivot": {
+					"description": "Defines whether entities flip within bounds (FALSE) or around their pivot point (TRUE).",
+					"type": [
+						"boolean"
 					]
 				},
 				"identifier": {

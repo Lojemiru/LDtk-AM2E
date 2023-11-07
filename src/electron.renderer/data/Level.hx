@@ -20,6 +20,8 @@ class Level {
 
 	public var externalRelPath: Null<String>;
 
+	public var backgrounds : Array<data.LevelBackground> = [];
+
 	public var bgRelPath: Null<String>;
 	public var bgPos: Null<ldtk.Json.BgImagePos>;
 	public var bgPivotX: Float;
@@ -47,6 +49,10 @@ class Level {
 		pxHei = hei;
 		bgPivotX = 0.5;
 		bgPivotY = 0.5;
+		backgrounds = new Array<data.LevelBackground>();
+		backgrounds.push(new LevelBackground(this));
+		backgrounds.push(new LevelBackground(this));
+		backgrounds.push(new LevelBackground(this));
 		this._project = project;
 		this._world = world;
 		this.identifier = "Level"+uid;
@@ -361,7 +367,13 @@ class Level {
 
 
 	public inline function hasBgImage() {
-		return bgRelPath!=null;
+		var output = false;
+		for (bg in backgrounds) {
+			if (bg.relPath!=null) {
+				output = true;
+			}
+		}
+		return output;
 	}
 
 
@@ -395,7 +407,10 @@ class Level {
 		if( !hasBgImage() )
 			return null;
 
-		var data = _project.getOrLoadImage(bgRelPath);
+		// TODO: Un-hardcode this
+		var _img = backgrounds[0];
+
+		var data = _project.getOrLoadImage(_img.relPath);
 		if( data==null )
 			return null;
 
@@ -403,7 +418,7 @@ class Level {
 		var baseTileHei = data.pixels.height;
 		var sx = 1.0;
 		var sy = 1.0;
-		switch bgPos {
+		switch _img.pos {
 			case null:
 				throw "bgPos should not be null";
 
@@ -429,12 +444,12 @@ class Level {
 
 		return {
 			imgData: data,
-			tx: bgPivotX * (baseTileWid-subTileWid),
-			ty: bgPivotY * (baseTileHei-subTileHei),
+			tx: _img.pivotX * (baseTileWid-subTileWid),
+			ty: _img.pivotY * (baseTileHei-subTileHei),
 			tw: subTileWid,
 			th: subTileHei,
-			dispX: Std.int( bgPivotX * (pxWid - subTileWid*sx) ),
-			dispY: Std.int( bgPivotY * (pxHei - subTileHei*sy) ),
+			dispX: Std.int( _img.pivotX * (pxWid - subTileWid*sx) ),
+			dispY: Std.int( _img.pivotY * (pxHei - subTileHei*sy) ),
 			sx: sx,
 			sy: sy,
 		}
@@ -445,10 +460,13 @@ class Level {
 		if( bgInf==null )
 			return null;
 
+		// TODO: Un-hardcode this
+		var _img = backgrounds[0];
+
 		var t = h2d.Tile.fromTexture( bgInf.imgData.tex );
 		t = t.sub(bgInf.tx, bgInf.ty, bgInf.tw, bgInf.th);
 
-		var tile = (bgPos == ldtk.Json.BgImagePos.Repeat);
+		var tile = (_img.pos == ldtk.Json.BgImagePos.Repeat);
 
 		var w = tile ? pxWid : Std.int(bgInf.tw);
 		var h = tile ? pxHei : Std.int(bgInf.th);
@@ -457,8 +475,8 @@ class Level {
 		tt.scaleX = bgInf.sx;
 		tt.scaleY = bgInf.sy;
 		if( tile ) {
-			tt.alignPivotX = bgPivotX;
-			tt.alignPivotY = bgPivotY;
+			tt.alignPivotX = _img.pivotX;
+			tt.alignPivotY = _img.pivotY;
 		}
 		else {
 			tt.x = bgInf.dispX;
@@ -712,8 +730,10 @@ class Level {
 					}
 				}
 
+			// TODO: Un-hardcode this????
+
 			// Level background images
-			if( _cachedFirstError==NoError && bgRelPath!=null && !_project.isImageLoaded(bgRelPath) )
+			if( _cachedFirstError==NoError && backgrounds.length > 0 && backgrounds[0].relPath!=null && !_project.isImageLoaded(backgrounds[0].relPath) )
 				_cachedFirstError = InvalidBgImage;
 
 			return _cachedFirstError;

@@ -250,39 +250,44 @@ class LevelInstanceForm {
 
 		// Create bg image picker
 		jForm.find("dd.bg .imagePicker").remove();
-		var jImg = JsTools.createImagePicker(project, level.bgRelPath, (relPath)->{
-			var old = level.bgRelPath;
-			if( relPath==null && old!=null ) {
-				// Remove
-				level.bgRelPath = null;
-				level.bgPos = null;
-				editor.watcher.stopWatchingRel( old );
-			}
-			else if( relPath!=null ) {
-				var chk = project.checkImageBeforeLoading(relPath);
-				if( chk!=Ok ) {
-					ui.modal.dialog.Message.error( L.imageLoadingMessage(relPath, chk) );
-					return;
-				}
 
-				// Add or update
-				var img = project.getOrLoadImage(relPath);
-				if( img==null ) {
-					ui.modal.dialog.Message.error( L.t._("Could not load this image") );
-					return;
-				}
-				level.bgRelPath = relPath;
-				if( old!=null )
+		var loops = level.backgrounds.length;
+
+		for (i in 0...loops) {
+			var jImg = JsTools.createImagePicker(project, level.backgrounds[i].relPath, (relPath)->{
+				var old = level.backgrounds[i].relPath;
+				if( relPath==null && old!=null ) {
+					// Remove
+					level.backgrounds[i].relPath = null;
+					//level.bgPos = null;
 					editor.watcher.stopWatchingRel( old );
-				editor.watcher.watchImage(relPath);
-				if( old==null )
-					level.bgPos = Cover;
-			}
-			onFieldChange();
-		});
-		jImg.prependTo( jForm.find("dd.bg") );
+				}
+				else if( relPath!=null ) {
+					var chk = project.checkImageBeforeLoading(relPath);
+					if( chk!=Ok ) {
+						ui.modal.dialog.Message.error( L.imageLoadingMessage(relPath, chk) );
+						return;
+					}
 
-		if( level.bgRelPath!=null )
+					// Add or update
+					var img = project.getOrLoadImage(relPath);
+					if( img==null ) {
+						ui.modal.dialog.Message.error( L.t._("Could not load this image") );
+						return;
+					}
+					level.backgrounds[i].relPath = relPath;
+					if( old!=null )
+						editor.watcher.stopWatchingRel( old );
+					editor.watcher.watchImage(relPath);
+					if( old==null )
+						level.backgrounds[i].pos = Cover;
+				}
+				onFieldChange();
+			});
+			jImg.prependTo( jForm.find("dd.bg") );
+		}
+
+		if( level.hasBgImage() )
 			jForm.find("dd.bg .pos").show();
 		else
 			jForm.find("dd.bg .pos").hide();

@@ -300,6 +300,7 @@
 				"__worldX",
 				"__worldY",
 				"defUid",
+				"f",
 				"fieldInstances",
 				"height",
 				"iid",
@@ -401,6 +402,12 @@
 				},
 				"height": {
 					"description": "Entity height in pixels. For non-resizable entities, it will be the same as Entity definition.",
+					"type": [
+						"integer"
+					]
+				},
+				"f": {
+					"description": "Two-bit integer. First bit determines whether or not this EntityInstance is flipped horizontally, the second bit vertically.",
 					"type": [
 						"integer"
 					]
@@ -582,6 +589,7 @@
 			"title": "Entity definition",
 			"required": [
 				"color",
+				"flipAroundPivot",
 				"height",
 				"identifier",
 				"nineSliceBorders",
@@ -671,6 +679,12 @@
 					"description": "Pixel height",
 					"type": [
 						"integer"
+					]
+				},
+				"flipAroundPivot": {
+					"description": "Defines whether entities flip within bounds (FALSE) or around their pivot point (TRUE).",
+					"type": [
+						"boolean"
 					]
 				},
 				"identifier": {

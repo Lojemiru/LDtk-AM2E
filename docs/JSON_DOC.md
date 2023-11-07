@@ -154,6 +154,7 @@ Value | Type | Description
 `__worldX`<br/> ![Generic badge](https://img.shields.io/badge/Added_1.3.4-gray.svg)  | Int | X world coordinate in pixels
 `__worldY`<br/> ![Generic badge](https://img.shields.io/badge/Added_1.3.4-gray.svg)  | Int | Y world coordinate in pixels
 `defUid` | Int | Reference of the **Entity definition** UID
+`f`<br/> ![Generic badge](https://img.shields.io/badge/Added_1.2.6-gray.svg)  | Int | Two-bit integer. First bit determines whether or not this EntityInstance is flipped horizontally, the second bit vertically.
 `fieldInstances` | Array&nbsp;of&nbsp;[Field&nbsp;instance](#ldtk-FieldInstanceJson) | An array of all custom fields and their values.
 `height`<br/> ![Generic badge](https://img.shields.io/badge/Added_0.8.0-gray.svg)  | Int | Entity height in pixels. For non-resizable entities, it will be the same as Entity definition.
 `iid`<br/> ![Generic badge](https://img.shields.io/badge/Added_1.0.0-gray.svg)  | String | Unique instance identifier
@@ -282,6 +283,7 @@ Value | Type | Description
 Value | Type | Description
 -- | -- | --
 `color` | String<br/><small class="color"> *Hex color "#rrggbb"* </small> | Base entity color
+`flipAroundPivot`<br/> ![Generic badge](https://img.shields.io/badge/Added_1.2.6-gray.svg)  | Bool | Defines whether entities flip within bounds (FALSE) or around their pivot point (TRUE).
 `height` | Int | Pixel height
 `identifier` | String | User defined unique identifier
 `nineSliceBorders`<br/> ![Generic badge](https://img.shields.io/badge/Added_1.0.0-gray.svg)  | Array&nbsp;of&nbsp;Int | An array of 4 dimensions for the up/right/down/left borders (in this order) when using 9-slice mode for `tileRenderMode`.<br/>		If the tileRenderMode is not NineSlice, then this array is empty.<br/>		See: https://en.wikipedia.org/wiki/9-slice_scaling
@@ -297,6 +299,8 @@ Value | Type | Description
 `exportToToc`<br/><sup class="internal">*Only used by editor*</sup><br/> ![Generic badge](https://img.shields.io/badge/Added_1.2.4-gray.svg)  | Bool | If enabled, all instances of this entity will be listed in the project "Table of content" object.
 `fieldDefs`<br/><sup class="internal">*Only used by editor*</sup> | Array&nbsp;of&nbsp;[Field&nbsp;definition](#ldtk-FieldDefJson) | Array of field definitions
 `fillOpacity`<br/><sup class="internal">*Only used by editor*</sup><br/> ![Generic badge](https://img.shields.io/badge/Added_0.8.0-gray.svg)  | Float | 
+`flippableX`<br/><sup class="internal">*Only used by editor*</sup><br/> ![Generic badge](https://img.shields.io/badge/Added_1.2.6-gray.svg)  | Bool | If TRUE, the entity instances will be flippable horizontally
+`flippableY`<br/><sup class="internal">*Only used by editor*</sup><br/> ![Generic badge](https://img.shields.io/badge/Added_1.2.6-gray.svg)  | Bool | If TRUE, the entity instances will be flippable vertically
 `hollow`<br/><sup class="internal">*Only used by editor*</sup><br/> ![Generic badge](https://img.shields.io/badge/Added_0.8.0-gray.svg)  | Bool | 
 `keepAspectRatio`<br/><sup class="internal">*Only used by editor*</sup><br/> ![Generic badge](https://img.shields.io/badge/Added_0.8.0-gray.svg)  | Bool | Only applies to entities resizable on both X/Y. If TRUE, the entity instance width/height will keep the same aspect ratio as the definition.
 `limitBehavior`<br/><sup class="internal">*Only used by editor*</sup> | Enum | Possible values: `DiscardOldOnes`, `PreventAdding`, `MoveLastOne`

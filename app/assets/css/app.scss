@@ -6937,6 +6937,184 @@ canvas#webgl {
 	}
 }
 
+.backgroundDefsForm {
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	display: grid;
+	gap: 8px;
+	grid-template-columns: 200px auto;
+	grid-template-rows: 40px auto;
+
+	.buttons {
+		flex-wrap: nowrap;
+	}
+	button {
+		white-space: nowrap;
+	}
+
+	ul.backgroundList {
+		overflow: auto;
+		margin: 0;
+		grid-row: 2/3;
+
+		li {
+			grid-template-columns: auto min-content min-content;
+			gap: 0px 2px;
+			overflow: hidden;
+			.name {
+				width: 100%;
+				overflow: hidden;
+			}
+			.bg {
+				.pos {
+					display: grid;
+					grid-template-columns: 160px min-content;
+					justify-content: stretch;
+					.pivotEditor .grid {
+						grid-template-columns: repeat(3, 14px);
+						grid-template-rows: repeat(3, 14px);
+					}
+					select {
+						font-size: 9pt;
+					}
+				}
+			}
+			.type {
+				display: block;
+				box-sizing: border-box;
+				flex: 0 1 0px;
+				width: 3em;
+				padding: 4px;
+				overflow: hidden;
+
+				color: white;
+				font-weight: bold;
+				font-size: 8pt;
+				text-align: center;
+
+				border: 1px solid white; // color in code
+				border-radius: 3px;
+				box-shadow: 0px 0px 4px transparentize($color: black, $amount: 0.5);
+
+				&.array {
+					border-left: 2px solid white !important;
+					border-right: 2px solid white !important;
+					border-top: none;
+					border-bottom: none;
+				}
+			}
+			// &.active .type {
+				// color: black !important;
+				// border-color: black !important;
+				// background: transparent !important;
+			// }
+		}
+		&:empty::before {
+			content: "No custom field";
+		}
+	}
+
+	.buttons {
+		grid-column: 1/2;
+		grid-row: 1/2;
+	}
+
+	dl.form {
+		overflow: auto;
+		grid-column: 2/3;
+		grid-row: 1/3;
+
+		h3 {
+			margin: 0;
+		}
+
+		input.type {
+			font-family: 'Courier New', Courier, monospace;
+		}
+		dt>label {
+			flex: 0 0 100px;
+		}
+
+		button.convert, .F_Path.file-select {
+			padding: 4px;
+			flex: 0 1 0px;
+			align-self: stretch;
+		}
+
+		.allowedRefTags:not(:empty) {
+			margin-top: 4px;
+		}
+
+		.defaultTile {
+			display: flex;
+			margin-left: 8px;
+
+			>span {
+				align-self: center;
+				color: $bgLighter;
+			}
+
+			.picker canvas.empty:not(:hover) {
+				border-color: $bgLight;
+			}
+			.clear {
+				flex: 0 1 0px;
+			}
+		}
+
+		dd.displayMode {
+			select:first-of-type {
+				flex: 1 1 150px;
+			}
+		}
+
+		select#allowedRefs {
+			flex: 1 0 100%;
+		}
+
+		*[class*="F_"],
+		*[class="NotArray"],
+		*[class="Array"] {
+			display: none;
+			&+dd {
+				display: none;
+			}
+		}
+
+
+		&.type-Array .Array,
+		&.type-NotArray .NotArray,
+		&.type-F_Int .F_int,
+		&.type-F_Float .F_Float,
+		&.type-F_Bool .F_Bool,
+		&.type-F_Color .F_Color,
+		&.type-F_Enum .F_Enum,
+		&.type-F_Point .F_Point,
+		&.type-F_Text .F_Text,
+		&.type-F_String .F_String,
+		&.type-F_EntityRef .F_EntityRef,
+		&.type-F_Tile .F_Tile,
+		&.type-F_Path .F_Path {
+			display: flex;
+			&:not(li) {
+				display: inherit;
+			}
+			&.info {
+				display: grid;
+			}
+			&+dd {
+				display: flex;
+			}
+		}
+
+		&.type-F_Path .F_Path.file-select {
+			display: initial;
+
+		}
+	}
+}
+
 
 
 dl.form.fieldInstanceEditor {
@@ -7346,7 +7524,8 @@ dl.form.fieldInstanceEditor {
 }
 
 .window.panel.editLayerDefs,
-.window.panel.editTilesetDefs {
+.window.panel.editTilesetDefs,
+.window.panel.editCompositeBackgroundDefs {
 	.content{
 		display: grid;
 		width: 960px;
@@ -9682,6 +9861,54 @@ $patternSize : 32px;
 			box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.4) inset;
 			background-color: rgba(0, 0, 0, 0.4);
 		}
+	}
+}
+
+.window.panel.editCompositeBackgroundDefs {
+	.mainList ul:empty::before {
+		content: "No composite background";
+	}
+
+	.content {
+		grid-template-rows: min-content min-content auto;
+		grid-template-columns: 300px auto;
+
+		.help {
+			grid-row: 2/4;
+			height: fit-content;
+		}
+
+		.mainList {
+			grid-template-rows: min-content min-content auto;
+			grid-row: 2/4;
+			span.name {
+				display: grid;
+				grid-template-columns: repeat(2,min-content);
+				overflow-x: hidden;
+				width: 100%;
+
+				.icon {
+					margin-right: 4px;
+				}
+			}
+			.active .name .icon {
+				filter: brightness(0);
+			}
+		}
+		dl.form {
+			grid-row: 2/3;
+			dt {
+				max-width: none;
+				white-space: nowrap;
+			}
+
+			&:not(.embed) {
+				.embedTileset {
+					display: none;
+				}
+			}
+		}
+		
 	}
 }
 

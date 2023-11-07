@@ -200,6 +200,10 @@ class Editor extends Page {
 			executeAppCommand(C_OpenEnumPanel);
 		});
 
+		jMainPanel.find("button.editCompositeBackgrounds").click( function(_) {
+			executeAppCommand(C_OpenCompositeBackgroundPanel);
+		});
+
 
 		jMainPanel.find("button.close").click( function(ev) onClose(ev.getThis()) );
 
@@ -345,10 +349,11 @@ class Editor extends Page {
 			watcher.watchImage(td.relPath);
 
 		// Level bg image hot-reloading
-		for( w in project.worlds )
-		for( l in w.levels )
-			if( l.bgRelPath!=null )
-				watcher.watchImage(l.bgRelPath);
+		// TODO: Make work with multiple BGs
+		//for( w in project.worlds )
+		//for( l in w.levels )
+		//	if( l.bgRelPath!=null )
+		//		watcher.watchImage(l.bgRelPath);
 
 		for( ed in project.defs.externalEnums )
 			watcher.watchEnum(ed);
@@ -881,6 +886,12 @@ class Editor extends Page {
 					ui.Modal.closeAll();
 				else
 					new ui.modal.panel.EditTilesetDefs();
+
+			case C_OpenCompositeBackgroundPanel:
+				if( ui.Modal.isOpen(ui.modal.panel.EditCompositeBackgroundDefs) )
+					ui.Modal.closeAll();
+				else
+					new ui.modal.panel.EditCompositeBackgroundDefs();
 
 			case C_OpenLevelPanel:
 				if( ui.Modal.isOpen(ui.modal.panel.LevelInstancePanel) )
@@ -2040,6 +2051,18 @@ class Editor extends Page {
 			case TilesetDefPixelDataCacheRebuilt(td):
 			case TilesetDefSorted:
 			case TilesetEnumChanged:
+			
+			// TODO: Do these need code????
+			case BackgroundDefRemoved(bg):
+			case BackgroundDefChanged(bg):
+			case BackgroundDefAdded(bg):
+			case BackgroundDefSorted:
+
+			case CompositeBackgroundDefRemoved(td):
+			case CompositeBackgroundDefChanged(td):
+			case CompositeBackgroundDefAdded(td):
+			case CompositeBackgroundDefSorted:
+
 			case EntityInstanceAdded(ei): invalidateLevelCache(ei._li.level);
 			case EntityInstanceRemoved(ei): invalidateLevelCache(ei._li.level);
 			case EntityInstanceChanged(ei): invalidateLevelCache(ei._li.level);
@@ -2273,6 +2296,17 @@ class Editor extends Page {
 			case TilesetDefAdded(td):
 
 			case TilesetEnumChanged:
+
+			// TODO: Do these need code???
+			case BackgroundDefRemoved(bg):
+			case BackgroundDefChanged(bg):
+			case BackgroundDefAdded(bg):
+			case BackgroundDefSorted:
+
+			case CompositeBackgroundDefRemoved(td):
+			case CompositeBackgroundDefChanged(td):
+			case CompositeBackgroundDefAdded(td):
+			case CompositeBackgroundDefSorted:
 
 			case ProjectSettingsChanged:
 				updateBanners();

@@ -233,7 +233,8 @@ class LayerRender {
 	public function renderBgToTexture(l:data.Level, tex:h3d.mat.Texture) {
 		tex.clear( l.getBgColor() );
 
-		if( l.bgRelPath!=null ) {
+		if( l.hasBgImage() ) {
+			// TODO: Make this work with multiple images pls
 			var bmp = l.createBgTiledTexture();
 			if( bmp!=null )
 				bmp.drawTo(tex);

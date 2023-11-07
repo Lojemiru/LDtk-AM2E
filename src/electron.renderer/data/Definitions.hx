@@ -8,6 +8,7 @@ class Definitions {
 	public var layers: Array<data.def.LayerDef> = [];
 	public var entities: Array<data.def.EntityDef> = [];
 	public var tilesets: Array<data.def.TilesetDef> = [];
+	public var compositeBackgrounds: Array<data.def.CompositeBackgroundDef> = [];
 	public var enums: Array<data.def.EnumDef> = [];
 	public var externalEnums: Array<data.def.EnumDef> = [];
 	public var levelFields: Array<data.def.FieldDef> = [];
@@ -22,6 +23,7 @@ class Definitions {
 			layers: layers.map( ld->ld.toJson() ),
 			entities: entities.map( ed->ed.toJson(p) ),
 			tilesets: tilesets.map( td->td.toJson() ),
+			compositeBackgrounds: compositeBackgrounds.map( cd->cd.toJson() ),
 			enums: enums.map( ed->ed.toJson(p) ),
 			externalEnums: externalEnums.map( ed->ed.toJson(p) ),
 			levelFields: levelFields.map( fd->fd.toJson() ),
@@ -39,6 +41,10 @@ class Definitions {
 
 		for( tilesetJson in JsonTools.readArray(json.tilesets) )
 			p.defs.tilesets.push( data.def.TilesetDef.fromJson(p, tilesetJson) );
+
+		if ( json.compositeBackgrounds != null )
+			for( compositeBackgroundJson in JsonTools.readArray(json.compositeBackgrounds) )
+				p.defs.compositeBackgrounds.push( data.def.CompositeBackgroundDef.fromJson(p, compositeBackgroundJson) );
 
 		for( enumJson in JsonTools.readArray(json.enums) )
 			p.defs.enums.push( data.def.EnumDef.fromJson(p, p.jsonVersion, enumJson) );
@@ -69,6 +75,9 @@ class Definitions {
 
 		for(td in tilesets)
 			td.tidy(p);
+
+		for (cd in compositeBackgrounds)
+			cd.tidy(p);
 
 		for(fd in levelFields)
 			fd.tidy(p);
@@ -602,6 +611,77 @@ class Definitions {
 		return moved;
 	}
 
+	/**  COMPOSITE BACKGROUND DEFS  *************************/
+
+	public function createCompositeBackgroundDef() : data.def.CompositeBackgroundDef {
+		var td = new data.def.CompositeBackgroundDef( _project, _project.generateUniqueId_int() );
+		compositeBackgrounds.push(td);
+
+		td.identifier = _project.fixUniqueIdStr("CompositeBackground", id->isCompositeBackgroundIdentifierUnique(id));
+		_project.tidy();
+		return td;
+	}
+
+	public function duplicateCompositeBackgroundDef(td:data.def.CompositeBackgroundDef) {
+		return pasteCompositeBackgroundDef( Clipboard.createTemp(CCompositeBackgroundDef,td.toJson()), td );
+	}
+
+	public function getCompositeBackgroundIndex(uid:Int) {
+		var idx = 0;
+		for(ed in compositeBackgrounds)
+			if( ed.uid==uid )
+				break;
+			else
+				idx++;
+		return idx>=compositeBackgrounds.length ? -1 : idx;
+	}
+
+	public function isCompositeBackgroundIdentifierUnique(id:String, ?exclude:data.def.CompositeBackgroundDef) {
+		id = Project.cleanupIdentifier(id, _project.identifierStyle);
+		for(td in compositeBackgrounds)
+			if( td.identifier==id && td!=exclude)
+				return false;
+		return true;
+	}
+
+	public function pasteCompositeBackgroundDef(c:Clipboard, ?after:data.def.CompositeBackgroundDef) : Null<data.def.CompositeBackgroundDef> {
+		if( !c.is(CCompositeBackgroundDef) )
+			return null;
+
+		var json : ldtk.Json.CompositeBackgroundDefJson = c.getParsedJson();
+		var copy = data.def.CompositeBackgroundDef.fromJson( _project, json );
+		copy.uid = _project.generateUniqueId_int();
+		copy.identifier = _project.fixUniqueIdStr(json.identifier, id->isCompositeBackgroundIdentifierUnique(id));
+		if( after==null )
+			compositeBackgrounds.push(copy);
+		else
+			compositeBackgrounds.insert( dn.Lib.getArrayIndex(after, compositeBackgrounds)+1, copy );
+
+		_project.tidy();
+		return copy;
+	}
+
+	public function removeCompositeBackgroundDef(td:data.def.CompositeBackgroundDef) {
+		if( !compositeBackgrounds.remove(td) )
+			throw "Unknown compositeBackgroundDef";
+
+		_project.tidy();
+	}
+
+	public function sortCompositeBackgroundDef(from:Int, to:Int) : Null<data.def.CompositeBackgroundDef> {
+		if( from<0 || from>=compositeBackgrounds.length || from==to )
+			return null;
+
+		if( to<0 || to>=compositeBackgrounds.length )
+			return null;
+
+		_project.tidy();
+
+		var moved = compositeBackgrounds.splice(from,1)[0];
+		compositeBackgrounds.insert(to, moved);
+
+		return moved;
+	}
 
 
 	/**  ENUM DEFS  *****************************************/

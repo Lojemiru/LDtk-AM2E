@@ -254,6 +254,17 @@ class LevelRender extends dn.Process {
 					for( li in editor.curLevel.layerInstances)
 						invalidateLayer(li);
 
+			// TODO: Do these require code???
+			case BackgroundDefRemoved(bg):
+			case BackgroundDefChanged(bg):
+			case BackgroundDefAdded(bg):
+			case BackgroundDefSorted:
+
+			case CompositeBackgroundDefRemoved(td):
+			case CompositeBackgroundDefChanged(td):
+			case CompositeBackgroundDefAdded(td):
+			case CompositeBackgroundDefSorted:
+
 			case EntityDefRemoved, EntityDefChanged, EntityDefSorted:
 				for(li in editor.curLevel.layerInstances)
 					if( li.def.type==Entities )
