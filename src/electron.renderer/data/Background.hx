@@ -34,6 +34,55 @@ class Background {
 		return relPath!=null;
 	}
 
+	public function getImageInfo(pxWid:Int, pxHei:Int) : Null<{ imgData:data.DataTypes.CachedImage, tx:Float, ty:Float, tw:Float, th:Float, dispX:Int, dispY:Int, sx:Float, sy:Float }> {
+		if( !hasImage() )
+			return null;
+
+		var data = _project.getOrLoadImage(relPath);
+		if( data==null )
+			return null;
+
+		var baseTileWid = data.pixels.width;
+		var baseTileHei = data.pixels.height;
+		var sx = 1.0;
+		var sy = 1.0;
+		switch pos {
+			case null:
+				throw "pos should not be null";
+
+			case Unscaled:
+
+			case Contain:
+				sx = sy = M.fmin( pxWid/baseTileWid, pxHei/baseTileHei );
+
+			case Cover:
+				sx = sy = M.fmax( pxWid/baseTileWid, pxHei/baseTileHei );
+
+			case CoverDirty:
+				sx = pxWid / baseTileWid;
+				sy = pxHei/ baseTileHei;
+
+			case Repeat:
+				// Do nothing, tiling shenanigans are handled in createBgTiledTexture.
+		}
+
+		// Crop tile
+		var subTileWid = M.fmin(baseTileWid, pxWid/sx);
+		var subTileHei = M.fmin(baseTileHei, pxHei/sy);
+
+		return {
+			imgData: data,
+			tx: pivotX * (baseTileWid-subTileWid),
+			ty: pivotY * (baseTileHei-subTileHei),
+			tw: subTileWid,
+			th: subTileHei,
+			dispX: Std.int( pivotX * (pxWid - subTileWid*sx) ),
+			dispY: Std.int( pivotY * (pxHei - subTileHei*sy) ),
+			sx: sx,
+			sy: sy,
+		}
+	}
+
 	public function toJson() : ldtk.Json.BackgroundDefJson {
 		return {
 			uid: uid,

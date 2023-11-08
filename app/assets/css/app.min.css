@@ -6341,7 +6341,7 @@ body.fullscreen #page.home .buttons .exit {
   grid-template-columns: 160px min-content;
   justify-content: stretch;
 }
-.backgroundDefsForm ul.backgroundList li .bg .pos .pivotEditor .grid {
+.backgroundDefsForm ul.backgroundList li .bg .pos .pivot .grid {
   grid-template-columns: repeat(3, 14px);
   grid-template-rows: repeat(3, 14px);
 }

@@ -311,6 +311,26 @@ class BackgroundDefsForm {
 				onBackgroundChange();
 			});
 		}
+
+		// Bg pivot
+		var jPivot = jForm.find(".pos>.pivot");
+		jPivot.empty();
+		if( curBackground.hasImage() ) {
+			var imgInf = curBackground.getImageInfo(1, 1);
+			if( imgInf!=null ) {
+				jPivot.append( JsTools.createPivotEditor(
+					curBackground.pivotX, curBackground.pivotY,
+					true,
+					Std.int( imgInf.tw ),
+					Std.int( imgInf.th ),
+					(x,y)->{
+						curBackground.pivotX = x;
+						curBackground.pivotY = y;
+						onBackgroundChange();
+					}
+				));
+			}
+		}
 	}
 
 	function onCreateBackground(anchor:js.jquery.JQuery) {
