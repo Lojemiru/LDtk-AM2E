@@ -20,7 +20,7 @@ class Level {
 
 	public var externalRelPath: Null<String>;
 
-	public var backgrounds : Array<data.LevelBackground> = [];
+	public var background : Null<data.def.CompositeBackgroundDef>;
 
 	public var bgRelPath: Null<String>;
 	public var bgPos: Null<ldtk.Json.BgImagePos>;
@@ -49,10 +49,6 @@ class Level {
 		pxHei = hei;
 		bgPivotX = 0.5;
 		bgPivotY = 0.5;
-		backgrounds = new Array<data.LevelBackground>();
-		backgrounds.push(new LevelBackground(this));
-		backgrounds.push(new LevelBackground(this));
-		backgrounds.push(new LevelBackground(this));
 		this._project = project;
 		this._world = world;
 		this.identifier = "Level"+uid;
@@ -177,7 +173,12 @@ class Level {
 			__bgColor: JsonTools.writeColor( getBgColor() ),
 			bgColor: JsonTools.writeColor(bgColor, true),
 			useAutoIdentifier: useAutoIdentifier,
-
+			background: {
+				if ( background==null)
+					null;
+				else
+					background.toJson();
+			},
 			bgRelPath: bgRelPath,
 			bgPos: JsonTools.writeEnum(bgPos, true),
 			bgPivotX: JsonTools.writeFloat(bgPivotX),
@@ -300,7 +301,8 @@ class Level {
 		l.bgColor = JsonTools.readColor(json.bgColor, true);
 		l.externalRelPath = json.externalRelPath;
 		l.useAutoIdentifier = JsonTools.readBool(json.useAutoIdentifier, false); // older projects should keep their original IDs untouched
-
+		if ( json.background!=null )
+			l.background = data.def.CompositeBackgroundDef.fromJson(p, json.background);
 		l.bgRelPath = json.bgRelPath;
 		l.bgPos = JsonTools.readEnum(ldtk.Json.BgImagePos, json.bgPos, true);
 		l.bgPivotX = JsonTools.readFloat(json.bgPivotX, 0.5);
@@ -367,13 +369,7 @@ class Level {
 
 
 	public inline function hasBgImage() {
-		var output = false;
-		for (bg in backgrounds) {
-			if (bg.relPath!=null) {
-				output = true;
-			}
-		}
-		return output;
+		return background!=null;
 	}
 
 
@@ -407,6 +403,10 @@ class Level {
 		if( !hasBgImage() )
 			return null;
 
+		// TODO: Actually set this up lol
+		return null;
+
+		/*
 		// TODO: Un-hardcode this
 		var _img = backgrounds[0];
 
@@ -453,6 +453,7 @@ class Level {
 			sx: sx,
 			sy: sy,
 		}
+		*/
 	}
 
 	public function createBgTiledTexture(?p:h2d.Object) : Null<dn.heaps.TiledTexture> {
@@ -460,6 +461,10 @@ class Level {
 		if( bgInf==null )
 			return null;
 
+		// TODO: Implement this lol
+		return null;
+
+		/*
 		// TODO: Un-hardcode this
 		var _img = backgrounds[0];
 
@@ -484,6 +489,7 @@ class Level {
 		}
 
 		return tt;
+		*/
 	}
 
 
@@ -730,11 +736,11 @@ class Level {
 					}
 				}
 
-			// TODO: Un-hardcode this????
+			// TODO: Implement this lol
 
 			// Level background images
-			if( _cachedFirstError==NoError && backgrounds.length > 0 && backgrounds[0].relPath!=null && !_project.isImageLoaded(backgrounds[0].relPath) )
-				_cachedFirstError = InvalidBgImage;
+			//if( _cachedFirstError==NoError && backgrounds.length > 0 && backgrounds[0].relPath!=null && !_project.isImageLoaded(backgrounds[0].relPath) )
+			//	_cachedFirstError = InvalidBgImage;
 
 			return _cachedFirstError;
 		}

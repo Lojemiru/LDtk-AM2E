@@ -626,6 +626,14 @@ class Definitions {
 		return pasteCompositeBackgroundDef( Clipboard.createTemp(CCompositeBackgroundDef,td.toJson()), td );
 	}
 
+	public function getCompositeBackgroundDef(id:haxe.extern.EitherType<String,Int>) : Null<data.def.CompositeBackgroundDef> {
+		for(bg in compositeBackgrounds)
+			if( bg.uid==id || bg.identifier==id )
+				return bg;
+
+		return null;
+	}
+
 	public function getCompositeBackgroundIndex(uid:Int) {
 		var idx = 0;
 		for(ed in compositeBackgrounds)
@@ -634,6 +642,12 @@ class Definitions {
 			else
 				idx++;
 		return idx>=compositeBackgrounds.length ? -1 : idx;
+	}
+
+	public function getAllCompositeBackgroundsGroupedByTag() : Array<{ tag:String, all:Array<data.def.CompositeBackgroundDef> }> {
+		var tagGroups = [];
+		tagGroups = groupUsingTags(compositeBackgrounds, bg->bg.tags);
+		return tagGroups;
 	}
 
 	public function isCompositeBackgroundIdentifierUnique(id:String, ?exclude:data.def.CompositeBackgroundDef) {
