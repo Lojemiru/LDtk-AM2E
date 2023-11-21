@@ -19,7 +19,7 @@ class LevelRender extends dn.Process {
 	var layerRenders : Map<Int, LayerRender> = new Map();
 
 	var bgColor : h2d.Bitmap;
-	var bgImage : dn.heaps.TiledTexture;
+	var bgImages : Array<dn.heaps.TiledTexture> = [];
 	var bounds : h2d.Graphics;
 	var boundsGlow : h2d.Graphics;
 	var grid : h2d.Graphics;
@@ -42,8 +42,8 @@ class LevelRender extends dn.Process {
 		bgColor = new h2d.Bitmap();
 		root.add(bgColor, Const.DP_BG);
 
-		bgImage = new dn.heaps.TiledTexture(1, 1);
-		root.add(bgImage, Const.DP_BG);
+		//bgImage = new dn.heaps.TiledTexture(1, 1);
+		//root.add(bgImage, Const.DP_BG);
 
 		bounds = new h2d.Graphics();
 		root.add(bounds, Const.DP_UI);
@@ -440,22 +440,42 @@ class LevelRender extends dn.Process {
 		bgColor.scaleX = editor.curLevel.pxWid;
 		bgColor.scaleY = editor.curLevel.pxHei;
 
-		var tt = level.createBgTiledTexture();
-		if( tt!=null ) {
-			bgImage.tile = tt.tile;
-			bgImage.setPosition( tt.x, tt.y );
-			bgImage.scaleX = tt.scaleX;
-			bgImage.scaleY = tt.scaleY;
-			bgImage.alignPivotX = tt.alignPivotX;
-			bgImage.alignPivotY = tt.alignPivotY;
-			bgImage.visible = true;
-			bgImage.alpha = settings.v.singleLayerMode ? getSingleLayerModeAlpha() : 1;
-			bgImage.filter = settings.v.singleLayerMode ? getSingleLayerModeFilter() : null;
-			bgImage.resize(tt.width, tt.height);
-		}
-		else {
-			bgImage.tile = null;
-			bgImage.visible = false;
+		var tts = level.createBgTiledTextures();
+		var i = 0;
+
+		if ( tts!=null ) {
+			for ( img in bgImages ) {
+				root.removeChild(img);
+			}
+
+			bgImages = [];
+			for ( tt in tts ) {
+				bgImages.push(new dn.heaps.TiledTexture(1, 1));
+				if( tt!=null ) {
+					bgImages[i].tile = tt.tile;
+					bgImages[i].setPosition( tt.x, tt.y );
+					bgImages[i].scaleX = tt.scaleX;
+					bgImages[i].scaleY = tt.scaleY;
+					bgImages[i].alignPivotX = tt.alignPivotX;
+					bgImages[i].alignPivotY = tt.alignPivotY;
+					bgImages[i].visible = true;
+					bgImages[i].alpha = settings.v.singleLayerMode ? getSingleLayerModeAlpha() : 1;
+					bgImages[i].filter = settings.v.singleLayerMode ? getSingleLayerModeFilter() : null;
+					bgImages[i].resize(tt.width, tt.height);
+				}
+				else {
+					bgImages[i].tile = null;
+					bgImages[i].visible = false;
+				}
+				i++;
+			}
+
+			i = 1;
+
+			for ( img in bgImages ) {
+				root.add(bgImages[bgImages.length - i], Const.DP_BG);
+				i++;
+			}
 		}
 	}
 

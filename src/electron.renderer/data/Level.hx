@@ -492,6 +492,112 @@ class Level {
 		*/
 	}
 
+	public function getBgTileInfosArray() : Null<Array<{ imgData:data.DataTypes.CachedImage, tx:Float, ty:Float, tw:Float, th:Float, dispX:Int, dispY:Int, sx:Float, sy:Float }>> {
+		if( !hasBgImage() )
+			return null;
+
+		var output = new Array<{ imgData:data.DataTypes.CachedImage, tx:Float, ty:Float, tw:Float, th:Float, dispX:Int, dispY:Int, sx:Float, sy:Float }>();
+		var i = 0;
+
+		for ( _img in background.backgrounds ) {
+			var data = _project.getOrLoadImage(_img.relPath);
+			
+			if( data==null ) {
+				output.push(null);
+			}
+			else {
+				var baseTileWid = data.pixels.width;
+				var baseTileHei = data.pixels.height;
+				var sx = 1.0;
+				var sy = 1.0;
+				switch _img.pos {
+					case null:
+						throw "bgPos should not be null";
+
+					case Unscaled:
+
+					case Contain:
+						sx = sy = M.fmin( pxWid/baseTileWid, pxHei/baseTileHei );
+
+					case Cover:
+						sx = sy = M.fmax( pxWid/baseTileWid, pxHei/baseTileHei );
+
+					case CoverDirty:
+						sx = pxWid / baseTileWid;
+						sy = pxHei/ baseTileHei;
+
+					case Repeat:
+						// Do nothing, tiling shenanigans are handled in createBgTiledTexture.
+				}
+
+				// Crop tile
+				var subTileWid = M.fmin(baseTileWid, pxWid/sx);
+				var subTileHei = M.fmin(baseTileHei, pxHei/sy);
+
+				output.push( {
+					imgData: data,
+					tx: _img.pivotX * (baseTileWid-subTileWid),
+					ty: _img.pivotY * (baseTileHei-subTileHei),
+					tw: subTileWid,
+					th: subTileHei,
+					dispX: Std.int( _img.pivotX * (pxWid - subTileWid*sx) ),
+					dispY: Std.int( _img.pivotY * (pxHei - subTileHei*sy) ),
+					sx: sx,
+					sy: sy,
+				} );
+			}
+
+			i++;
+		}
+
+		return output;
+	}
+
+	public function createBgTiledTextures(?p:h2d.Object) : Null<Array<dn.heaps.TiledTexture>> {
+		if ( !hasBgImage() )
+			return null;
+
+		var bgInfos = getBgTileInfosArray();
+		if ( bgInfos==null )
+			return null;
+
+		var output = new Array<dn.heaps.TiledTexture>();
+		var i = 0;
+
+		for ( bgInf in bgInfos ) {
+			if ( bgInf!=null ) {
+				
+				var _img = background.backgrounds[i];
+
+				var t = h2d.Tile.fromTexture( bgInf.imgData.tex );
+				t = t.sub(bgInf.tx, bgInf.ty, bgInf.tw, bgInf.th);
+
+				var tile = (_img.pos == ldtk.Json.BgImagePos.Repeat);
+
+				var w = tile ? pxWid : Std.int(bgInf.tw);
+				var h = tile ? pxHei : Std.int(bgInf.th);
+
+				var tt = new dn.heaps.TiledTexture(w, h, t, p);
+				tt.scaleX = bgInf.sx;
+				tt.scaleY = bgInf.sy;
+				if( tile ) {
+					tt.alignPivotX = _img.pivotX;
+					tt.alignPivotY = _img.pivotY;
+				}
+				else {
+					tt.x = bgInf.dispX;
+					tt.y = bgInf.dispY;
+				}
+
+				output.push(tt);
+				
+			}
+			i++;
+		}
+
+		return output;
+	}
+
 
 	public inline function isUsingDefaultBgColor() {
 		return bgColor==null;
