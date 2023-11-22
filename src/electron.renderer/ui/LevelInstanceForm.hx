@@ -275,6 +275,7 @@ class LevelInstanceForm {
 
 			function _apply() {
 				level.background = newBg;
+				level.backgroundUid = newBg.uid;
 				editor.ge.emit( LevelSettingsChanged(level) );
 			}
 

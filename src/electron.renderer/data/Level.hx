@@ -21,6 +21,7 @@ class Level {
 	public var externalRelPath: Null<String>;
 
 	public var background : Null<data.def.CompositeBackgroundDef>;
+	public var backgroundUid : Null<Int>;
 
 	public var bgRelPath: Null<String>;
 	public var bgPos: Null<ldtk.Json.BgImagePos>;
@@ -173,11 +174,11 @@ class Level {
 			__bgColor: JsonTools.writeColor( getBgColor() ),
 			bgColor: JsonTools.writeColor(bgColor, true),
 			useAutoIdentifier: useAutoIdentifier,
-			background: {
-				if ( background==null)
+			backgroundUid: {
+				if ( backgroundUid==null)
 					null;
 				else
-					background.toJson();
+					backgroundUid;
 			},
 			bgRelPath: bgRelPath,
 			bgPos: JsonTools.writeEnum(bgPos, true),
@@ -301,8 +302,10 @@ class Level {
 		l.bgColor = JsonTools.readColor(json.bgColor, true);
 		l.externalRelPath = json.externalRelPath;
 		l.useAutoIdentifier = JsonTools.readBool(json.useAutoIdentifier, false); // older projects should keep their original IDs untouched
-		if ( json.background!=null )
-			l.background = data.def.CompositeBackgroundDef.fromJson(p, json.background);
+		if ( json.backgroundUid!=null ) {
+			l.backgroundUid = JsonTools.readInt( json.backgroundUid, 0 );
+			l.background = p.defs.getCompositeBackgroundDef(l.backgroundUid);
+		}
 		l.bgRelPath = json.bgRelPath;
 		l.bgPos = JsonTools.readEnum(ldtk.Json.BgImagePos, json.bgPos, true);
 		l.bgPivotX = JsonTools.readFloat(json.bgPivotX, 0.5);
