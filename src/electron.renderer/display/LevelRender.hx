@@ -113,6 +113,7 @@ class LevelRender extends dn.Process {
 				invalidateGrid();
 
 			case ProjectSaved, BeforeProjectSaving:
+				invalidateUiAndBg();
 
 			case ProjectSelected:
 				renderAll();
@@ -254,16 +255,15 @@ class LevelRender extends dn.Process {
 					for( li in editor.curLevel.layerInstances)
 						invalidateLayer(li);
 
-			// TODO: Do these require code???
-			case BackgroundDefRemoved(bg):
-			case BackgroundDefChanged(bg):
 			case BackgroundDefAdded(bg):
-			case BackgroundDefSorted:
 
-			case CompositeBackgroundDefRemoved(td):
-			case CompositeBackgroundDefChanged(td):
+			case BackgroundDefRemoved(_), BackgroundDefChanged(_), BackgroundDefSorted:
+				invalidateUiAndBg();
+
 			case CompositeBackgroundDefAdded(td):
-			case CompositeBackgroundDefSorted:
+
+			case CompositeBackgroundDefRemoved(_), CompositeBackgroundDefChanged(_), CompositeBackgroundDefSorted:
+				invalidateUiAndBg();
 
 			case EntityDefRemoved, EntityDefChanged, EntityDefSorted:
 				for(li in editor.curLevel.layerInstances)
