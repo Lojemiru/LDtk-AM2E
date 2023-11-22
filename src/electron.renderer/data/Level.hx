@@ -499,6 +499,8 @@ class Level {
 		if( !hasBgImage() )
 			return null;
 
+		// TODO: this is the SAME flipping code as in Background.hx!!!!!
+
 		var output = new Array<{ imgData:data.DataTypes.CachedImage, tx:Float, ty:Float, tw:Float, th:Float, dispX:Int, dispY:Int, sx:Float, sy:Float }>();
 		var i = 0;
 
@@ -531,6 +533,9 @@ class Level {
 
 					case Repeat:
 						// Do nothing, tiling shenanigans are handled in createBgTiledTexture.
+
+					case Parallax:
+						// huh
 				}
 
 				// Crop tile
@@ -575,10 +580,17 @@ class Level {
 				var t = h2d.Tile.fromTexture( bgInf.imgData.tex );
 				t = t.sub(bgInf.tx, bgInf.ty, bgInf.tw, bgInf.th);
 
-				var tile = (_img.pos == ldtk.Json.BgImagePos.Repeat);
+				var tile = false;
+				var w = Std.int(bgInf.tw);
+				var h = Std.int(bgInf.th);
 
-				var w = tile ? pxWid : Std.int(bgInf.tw);
-				var h = tile ? pxHei : Std.int(bgInf.th);
+				if (_img.pos == ldtk.Json.BgImagePos.Repeat || _img.pos == ldtk.Json.BgImagePos.Parallax) {
+					tile = true;
+
+					// TODO: we need to allow for DISABLING these lines independently to allow for vertical/horizontal tiling split
+					w = pxWid;
+					h = pxHei;
+				}
 
 				var tt = new dn.heaps.TiledTexture(w, h, t, p);
 				tt.scaleX = bgInf.sx;

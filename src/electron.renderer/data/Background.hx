@@ -64,6 +64,9 @@ class Background {
 
 			case Repeat:
 				// Do nothing, tiling shenanigans are handled in createBgTiledTexture.
+
+			case Parallax:
+				// ahhhhhhh
 		}
 
 		// Crop tile

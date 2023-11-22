@@ -303,6 +303,7 @@ class BackgroundDefsForm {
 					case Cover: Lang.t._("Cover level (keep aspect ratio)");
 					case CoverDirty: Lang.t._("Cover (dirty scaling)");
 					case Repeat: Lang.t._("Repeat");
+					case Parallax: Lang.t._("Parallax");
 				});
 			}
 			jSelect.val( curBackground.pos.getName() );
