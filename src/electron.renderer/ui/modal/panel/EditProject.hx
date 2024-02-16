@@ -8,6 +8,7 @@ class EditProject extends ui.modal.Panel {
 		ldtk.Json.ProjectFlag.PrependIndexToLevelFileNames,
 		ldtk.Json.ProjectFlag.ExportPreCsvIntGridFormat,
 		ldtk.Json.ProjectFlag.UseMultilinesType,
+		ldtk.Json.ProjectFlag.ExportOldTableOfContentData,
 	];
 
 	var levelNamePatternEditor : NamePatternEditor;
@@ -25,19 +26,19 @@ class EditProject extends ui.modal.Panel {
 		showAdvanced = project.hasAnyFlag(allAdvancedOptions);
 
 		var jSave = jContent.find("button.save").click( function(ev) {
-			editor.executeAppCommand(C_SaveProject);
+			App.ME.executeAppCommand(C_SaveProject);
 			if( project.isBackup() )
 				close();
 		});
 		if( project.isBackup() )
 			jSave.text(L.t._("Restore this backup"));
 
-		var jSaveAs = jContent.find("button.saveAs").click( _->editor.executeAppCommand(C_SaveProjectAs) );
+		var jSaveAs = jContent.find("button.saveAs").click( _->App.ME.executeAppCommand(C_SaveProjectAs) );
 		if( project.isBackup() )
 			jSaveAs.hide();
 
 
-		var jRename = jContent.find("button.rename").click( _->editor.executeAppCommand(C_RenameProject) );
+		var jRename = jContent.find("button.rename").click( _->App.ME.executeAppCommand(C_RenameProject) );
 		if( project.isBackup() )
 			jRename.hide();
 
@@ -49,11 +50,11 @@ class EditProject extends ui.modal.Panel {
 			"png",
 			project.getImageExportFilePattern(),
 			[
-				{ k:"world", name:"World name" },
-				{ k:"level_name", name:"Level name" },
-				{ k:"level_idx", name:"Level idx)" },
-				{ k:"layer_name", name:"Layer name" },
-				{ k:"layer_idx", name:"Layer idx" },
+				{ k:"world", displayName:"WorldName" },
+				{ k:"level_name", displayName:"LevelName" },
+				{ k:"level_idx", displayName:"LevelIdx" },
+				{ k:"layer_name", displayName:"LayerName" },
+				{ k:"layer_idx", displayName:"LayerIdx" },
 			],
 			(pat)->{
 				project.pngFilePattern = pat==project.getDefaultImageExportFilePattern() ? null : pat;
@@ -70,14 +71,14 @@ class EditProject extends ui.modal.Panel {
 			"levelId",
 			project.levelNamePattern,
 			[
-				{ k:"world", name:"World ID" },
-				{ k:"idx1", name:"Level_index(1)", desc:"Level index (starting at 1)" },
-				{ k:"idx", name:"Level_index(0)", desc:"Level index (starting at 0)" },
-				{ k:"x", name:"x", desc:"X coordinate of the level" },
-				{ k:"y", name:"y", desc:"Y coordinate of the level" },
-				{ k:"gx", name:"Grid_X", desc:"X grid coordinate of the level" },
-				{ k:"gy", name:"Grid_Y", desc:"Y grid coordinate of the level" },
-				{ k:"depth", name:"World depth", desc:"Level depth in the world" },
+				{ k:"world", displayName:"WorldId" },
+				{ k:"idx1", displayName:"LevelIndex(1)", desc:"Level index (starting at 1)" },
+				{ k:"idx", displayName:"LevelIndex(0)", desc:"Level index (starting at 0)" },
+				{ k:"x", displayName:"LevelX", desc:"X coordinate of the level" },
+				{ k:"y", displayName:"LevelY", desc:"Y coordinate of the level" },
+				{ k:"gx", displayName:"GridX", desc:"X grid coordinate of the level" },
+				{ k:"gy", displayName:"GridY", desc:"Y grid coordinate of the level" },
+				{ k:"depth", displayName:"WorldDepth", desc:"Level depth in the world" },
 			],
 			(pat)->{
 				project.levelNamePattern = pat;
@@ -500,6 +501,10 @@ class EditProject extends ui.modal.Panel {
 					jLabel.text('Use "Multilines" instead of "String" for fields in JSON');
 					_setDesc( L.t._("If enabled, the JSON value \"__type\" for Field Instances and Field Definitions will be \"Multilines\" instead of \"String\" for all fields of Multilines type.") );
 
+				case ExportOldTableOfContentData:
+					jLabel.text('Export old entity table-of-content data');
+					_setDesc( L.t._("If enabled, the 'toc' field in the project JSON will contain an 'instances' array in addition of the new 'instanceData' array (see JSON online doc for more info).") );
+
 				case _:
 			}
 
@@ -508,8 +513,7 @@ class EditProject extends ui.modal.Panel {
 				()->project.hasFlag(flag),
 				(v)->{
 					editor.invalidateAllLevelsCache();
-					project.setFlag(flag, v);
-					editor.ge.emit(ProjectSettingsChanged);
+					editor.setProjectFlag(flag,v);
 				}
 			);
 		}

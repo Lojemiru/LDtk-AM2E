@@ -10,7 +10,7 @@ If at any point these design goals realign, I would be glad to see my added feat
 
 # About
 
-![](https://github.com/deepnight/ldtk/blob/master/app/assets/img/LDtk.svg)
+![](https://github.com/deepnight/ldtk/blob/master/app/assets/appIcon.png)
 
 **Level Designer Toolkit** (*LDtk*) is a **modern**, **efficient** and **open-source** 2D level editor with a strong focus on user-friendliness.
 

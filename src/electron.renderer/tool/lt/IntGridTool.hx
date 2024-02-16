@@ -55,10 +55,10 @@ class IntGridTool extends tool.LayerTool<Int> {
 		switch curMode {
 			case null:
 			case Add:
-				curLayerInstance.setIntGrid(cx, cy, getSelectedValue());
+				curLayerInstance.setIntGrid(cx, cy, getSelectedValue(), true);
 
 			case Remove:
-				curLayerInstance.removeIntGrid(cx, cy);
+				curLayerInstance.removeIntGrid(cx, cy, true);
 		}
 
 		if( old!=curLayerInstance.getIntGrid(cx,cy) ) {
@@ -80,10 +80,10 @@ class IntGridTool extends tool.LayerTool<Int> {
 			switch curMode {
 				case null:
 				case Add:
-					curLayerInstance.setIntGrid(cx,cy, getSelectedValue());
+					curLayerInstance.setIntGrid(cx,cy, getSelectedValue(), true);
 
 				case Remove:
-					curLayerInstance.removeIntGrid(cx,cy);
+					curLayerInstance.removeIntGrid(cx,cy, true);
 			}
 
 			if( old!=curLayerInstance.getIntGrid(cx,cy) ) {
@@ -108,10 +108,10 @@ class IntGridTool extends tool.LayerTool<Int> {
 				switch curMode {
 					case null:
 					case Add:
-						curLayerInstance.setIntGrid(cx,cy, v);
+						curLayerInstance.setIntGrid(cx,cy, v, true);
 
 					case Remove:
-						curLayerInstance.removeIntGrid(cx,cy);
+						curLayerInstance.removeIntGrid(cx,cy, true);
 				}
 			}
 		);

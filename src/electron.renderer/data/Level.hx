@@ -117,12 +117,17 @@ class Level {
 				var nears = _world.levels.filter( (ol)->
 					ol!=this && getBoundsDist(ol)==0
 					&& ol.worldDepth==worldDepth
-					&& !( ( ol.worldX>=worldX+pxWid || ol.worldX+ol.pxWid<=worldX )
-						&& ( ol.worldY>=worldY+pxHei || ol.worldY+ol.pxHei<=worldY ) )
+					// && !( ( ol.worldX>=worldX+pxWid || ol.worldX+ol.pxWid<=worldX )
+						// && ( ol.worldY>=worldY+pxHei || ol.worldY+ol.pxHei<=worldY ) )
 					&& !dn.Lib.rectangleOverlaps(worldX,worldY,pxWid,pxHei, ol.worldX,ol.worldY,ol.pxWid,ol.pxHei)
 				);
 				nears.map( (l)->{
-					var dir = l.worldX>=worldX+pxWid ? "e"
+					var dir =
+						l.worldX == worldX+pxWid  &&  l.worldY == worldY+pxHei ? "se"
+						: l.worldX+l.pxWid == worldX  &&  l.worldY == worldY+pxHei ? "sw"
+						: l.worldX == worldX+pxWid  &&  l.worldY+l.pxHei == worldY ? "ne"
+						: l.worldX+l.pxWid == worldX  &&  l.worldY+l.pxHei == worldY ? "nw"
+						: l.worldX>=worldX+pxWid ? "e"
 						: l.worldX+l.pxWid<=worldX ? "w"
 						: l.worldY+l.pxHei<=worldY ? "n"
 						: "s";
@@ -149,7 +154,6 @@ class Level {
 				Reflect.deleteField(o, dn.data.JsonPretty.HEADER_VALUE_NAME);
 			return o;
 		}
-
 
 		// World coords are not stored in JSON for automatically organized layouts
 		var jsonWorldX = worldX;
@@ -238,7 +242,7 @@ class Level {
 
 			layers : {
 				var out = [];
-				iterateLayerInstancesInRenderOrder( (li)->{
+				iterateLayerInstancesBottomToTop( (li)->{
 					var show = switch li.def.type {
 						case IntGrid: li.def.isAutoLayer();
 						case Entities: false;
@@ -353,20 +357,22 @@ class Level {
 
 	/** Crawl an Array recursively and fixes unescaped \n chars **/
 	static function crawlArray(arr:Array<Dynamic>) {
-		for( i in 0...arr.length )
-			switch Type.typeof( arr[i] ) {
+		for( i in 0...arr.length ) {
+			var v : Dynamic = arr[i];
+			switch Type.typeof(v) {
 				case TObject:
-					crawlObjectRec(arr[i]);
+					crawlObjectRec(v);
 
 				case TClass(Array):
-					crawlArray(arr[i]);
+					crawlArray(v);
 
 				case TClass(String):
-					if( arr[i].indexOf("\n")>=0 )
-						arr[i] = StringTools.replace(arr[i], "\n", "\\n");
+					if( v.indexOf("\n")>=0 )
+						arr[i] = StringTools.replace(v, "\n", "\\n");
 
 				case _:
 			}
+		}
 	}
 
 
@@ -626,11 +632,15 @@ class Level {
 		return levelX>=0 && levelX<pxWid && levelY>=0 && levelY<pxHei;
 	}
 
-	public inline function inBoundsWorld(worldX:Float, worldY:Float) {
-		return worldX>=this.worldX
-			&& worldX<this.worldX+pxWid
-			&& worldY>=this.worldY
-			&& worldY<this.worldY+pxHei;
+	public inline function inBoundsWorld(worldX:Float, worldY:Float, padPx=0) {
+		return worldX >= this.worldX-padPx
+			&& worldX < this.worldX+pxWid+padPx
+			&& worldY >= this.worldY-padPx
+			&& worldY < this.worldY+pxHei+padPx;
+	}
+
+	public inline function otherLevelCoordInBounds(otherLevel:Level, levelX:Int, levelY:Int, padPx=0) {
+		return inBoundsWorld(otherLevel.worldX+levelX, otherLevel.worldY+levelY, padPx);
 	}
 
 	public function isWorldOver(wx:Int, wy:Int, padding=0) {
@@ -808,6 +818,8 @@ class Level {
 			li.applyNewBounds(newPxLeft, newPxTop, newPxWid, newPxHei);
 		pxWid = newPxWid;
 		pxHei = newPxHei;
+		for(li in layerInstances)
+			li.recountAllIntGridValues();
 
 		// Remove entities out of bounds
 		var n = 0;
@@ -816,7 +828,7 @@ class Level {
 			var ei = null;
 			while( i<li.entityInstances.length ) {
 				ei = li.entityInstances[i];
-				if( !inBounds(ei.x, ei.y) ) {
+				if( !ei.def.allowOutOfBounds && !inBounds(ei.x, ei.y) ) {
 					App.LOG.general('Removed out-of-bounds entity ${ei.def.identifier} in $li');
 					li.entityInstances.splice(i,1);
 					n++;
@@ -882,6 +894,14 @@ class Level {
 		return fieldInstances.get(fd.uid);
 	}
 
+	public function getFieldInstanceByUid(fdUid:Int, createIfMissing:Bool) : Null<data.inst.FieldInstance> {
+		if( createIfMissing && !fieldInstances.exists(fdUid) ) {
+			fieldInstances.set( fdUid, new data.inst.FieldInstance(_project, fdUid) );
+			invalidateJsonCache();
+		}
+		return fieldInstances.get(fdUid);
+	}
+
 
 	public function getSmartColor(bright:Bool) : dn.Col {
 		inline function _adjust(c:Int) {
@@ -945,11 +965,19 @@ class Level {
 
 	/* RENDERING *******************/
 
-	public function iterateLayerInstancesInRenderOrder( eachLayer:data.inst.LayerInstance->Void ) {
+	public function iterateLayerInstancesBottomToTop( eachLayer:data.inst.LayerInstance->Void ) {
 		var i = _project.defs.layers.length-1;
 		while( i>=0 ) {
 			eachLayer( getLayerInstance(_project.defs.layers[i]) );
 			i--;
+		}
+	}
+
+	public function iterateLayerInstancesTopToBottom( eachLayer:data.inst.LayerInstance->Void ) {
+		var i = 0;
+		while( i<_project.defs.layers.length ) {
+			eachLayer( getLayerInstance(_project.defs.layers[i]) );
+			i++;
 		}
 	}
 }

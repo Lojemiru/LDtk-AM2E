@@ -260,7 +260,7 @@ class GenericLevelElementGroup {
 								var td = li.getTilesetDef();
 								if( td!=null && td.isAtlasLoaded() )
 									for( t in li.getGridTileStack(cx,cy) ) {
-										var bmp = new h2d.Bitmap( td.getTile(t.tileId), ghost );
+										var bmp = new h2d.Bitmap( td.getTileById(t.tileId), ghost );
 										bmp.x = li.pxParallaxX + ( cx + (M.hasBit(t.flips,0)?1:0) ) * li.def.scaledGridSize - bounds.left;
 										bmp.y = li.pxParallaxY + ( cy + (M.hasBit(t.flips,1)?1:0) ) * li.def.scaledGridSize - bounds.top;
 										bmp.scaleX = M.hasBit(t.flips, 0) ? -1 : 1;
@@ -638,10 +638,10 @@ class GenericLevelElementGroup {
 						for(cx in li.levelToLayerCx(r.leftPx)...li.levelToLayerCx(r.rightPx+1))
 						for(cy in li.levelToLayerCy(r.topPx)...li.levelToLayerCy(r.bottomPx+1)) {
 							if( li.def.type==IntGrid )
-								postRemovals.push( li.removeIntGrid.bind(cx,cy) );
+								postRemovals.push( li.removeIntGrid.bind(cx,cy,false) );
 
 							if( li.def.type==Tiles )
-								postRemovals.push( li.removeAllGridTiles.bind(cx,cy) );
+								postRemovals.push( li.removeAllGridTiles.bind(cx,cy,false) );
 						}
 					}
 					changedLayers.set(li,li);
@@ -711,7 +711,7 @@ class GenericLevelElementGroup {
 					changedLayers.set(li,li);
 
 					// Out of bounds
-					if( ei.isOutOfLayerBounds() ) {
+					if( !ei.def.allowOutOfBounds && ei.isOutOfLayerBounds() ) {
 						outOfBoundsRemovals.push(ei.def.identifier);
 						li.removeEntityInstance(ei);
 						elements[i] = null;
@@ -756,8 +756,8 @@ class GenericLevelElementGroup {
 								var tcx = cx + (to.cx-origin.cx)*gridRatio;
 								var tcy = cy + (to.cy-origin.cy)*gridRatio;
 								if( !isCopy && li.hasIntGrid(cx,cy) )
-									postRemovals.push( ()-> li.removeIntGrid(cx,cy) );
-								postInserts.push( ()-> li.setIntGrid(tcx, tcy, v) );
+									postRemovals.push( ()-> li.removeIntGrid(cx,cy,false) );
+								postInserts.push( ()-> li.setIntGrid(tcx, tcy, v, false) );
 
 								elements[i] = li.isValid(tcx,tcy) ? GridCell(li, tcx, tcy) : null; // update selection
 								changedLayers.set(li,li);
@@ -769,11 +769,11 @@ class GenericLevelElementGroup {
 								var tcy = cy + (to.cy-origin.cy)*gridRatio;
 
 								if( !isCopy && li.hasAnyGridTile(cx,cy) )
-									postRemovals.push( ()-> li.removeAllGridTiles(cx,cy) );
+									postRemovals.push( ()-> li.removeAllGridTiles(cx,cy,false) );
 
 								var stacking = li.getGridTileStack(cx,cy).length>1 || App.ME.settings.v.tileStacking;
 								for( t in li.getGridTileStack(cx,cy) )
-									postInserts.push( ()-> li.addGridTile(tcx, tcy, t.tileId, t.flips, stacking) );
+									postInserts.push( ()-> li.addGridTile(tcx, tcy, t.tileId, t.flips, stacking, false) );
 
 								elements[i] = li.isValid(tcx,tcy) ? GridCell(li, tcx, tcy) : null; // update selection
 								changedLayers.set(li,li);
@@ -817,9 +817,8 @@ class GenericLevelElementGroup {
 			}
 		}
 
-		if( outOfBoundsRemovals.length>0 ) {
+		if( outOfBoundsRemovals.length>0 )
 			N.warning( L.t._("Out-of-bounds entity removed: ::names::", {names:outOfBoundsRemovals.join(", ")}) );
-		}
 
 		// Execute move
 		for(cb in postRemovals) cb();

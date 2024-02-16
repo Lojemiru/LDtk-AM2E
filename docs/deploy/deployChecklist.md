@@ -1,5 +1,5 @@
 ## Tools
-- [ ] Define a `GH_TOKEN` env var  ([link](https://github.com/settings/tokens), all repo, Actions+Contents)
+- [ ] Define a `GH_TOKEN` env var  ([link](https://github.com/settings/tokens?type=beta), all repo, Actions+Contents)
 - [ ] Install "**Itch.io Butler**" ([download](https://itchio.itch.io/butler)) & login (`butler login`, [doc](https://itch.io/docs/butler/))
 - [ ] Add butler to env `PATH`
 - [ ] Add code signing files to env
@@ -46,7 +46,7 @@
 ## Publish Itch
 - [ ] Run `npm run publish-itchio`
 - [ ] Upload macOS build to Itch.io ([link](https://itch.io/dashboard))
-- [ ] Upload Linux build to Itch.io
+- [ ] Upload Linux build to Itch.io ([link](https://itch.io/dashboard))
 - [ ] Add a devlog post on Itch.io ([link](https://deepnight.itch.io/ldtk))
 - [ ] *[Optional]* Update Itch.io page
 

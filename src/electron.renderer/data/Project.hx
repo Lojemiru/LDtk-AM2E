@@ -61,10 +61,11 @@ class Project {
 
 	private function new() {
 		jsonVersion = Const.getJsonVersion();
-		defaultGridSize = Project.DEFAULT_GRID_SIZE;
 		bgColor = DEFAULT_WORKSPACE_BG;
+		defaultGridSize = Project.DEFAULT_GRID_SIZE;
 		defaultLevelBgColor = DEFAULT_LEVEL_BG;
 		defaultPivotX = defaultPivotY = 0;
+		defaultEntityWidth = defaultEntityHeight = Project.DEFAULT_GRID_SIZE;
 		filePath = new dn.FilePath();
 		flags = new Map();
 		levelNamePattern = DEFAULT_LEVEL_NAME_PATTERN;
@@ -228,7 +229,7 @@ class Project {
 
 	public function fixUniqueIdStr(baseId:String, ?styleOverride:ldtk.Json.IdentifierStyle, isUnique:String->Bool) : String {
 		baseId = cleanupIdentifier(baseId, styleOverride==null ? identifierStyle : styleOverride);
-		if( baseId=="_" )
+		if( baseId=="_" || baseId==null )
 			baseId = "Unnamed";
 
 		if( isUnique(baseId) )
@@ -286,6 +287,8 @@ class Project {
 					}
 				}
 			}
+		if( dn.Version.lower(json.jsonVersion, "1.5", true) )
+			p.flags.set(ExportOldTableOfContentData, true);
 
 		p.defaultPivotX = JsonTools.readFloat( json.defaultPivotX, 0 );
 		p.defaultPivotY = JsonTools.readFloat( json.defaultPivotY, 0 );
@@ -385,7 +388,8 @@ class Project {
 		return f!=null && flags.exists(f);
 	}
 
-	public inline function setFlag(f:ldtk.Json.ProjectFlag, v:Bool) {
+	@:allow(page.Editor.setProjectFlag)
+	function setFlag(f:ldtk.Json.ProjectFlag, v:Bool) {
 		if( f!=null ) {
 			var old = hasFlag(f);
 
@@ -578,6 +582,7 @@ class Project {
 				var tocEntry : ldtk.Json.TableOfContentEntry = {
 					identifier: ed.identifier,
 					instances: [],
+					instancesData: [],
 				}
 				cachedToc.push(tocEntry);
 				for(w in worlds)
@@ -590,11 +595,31 @@ class Project {
 						if( ei.defUid!=ed.uid )
 							continue;
 
-						tocEntry.instances.push({
+						var refInfo : ldtk.Json.EntityReferenceInfos = {
 							worldIid: w.iid,
 							levelIid: l.iid,
 							layerIid: li.iid,
 							entityIid: ei.iid,
+						}
+
+						// Old deprecated data
+						if( hasFlag(ExportOldTableOfContentData) )
+							tocEntry.instances.push(refInfo);
+
+						// Entity fields
+						var fields : Dynamic = {};
+						for(fi in ei.fieldInstances)
+							if( fi.def.exportToToc )
+								Reflect.setField(fields, fi.def.identifier, fi.getFullJsonValue());
+
+						// Instance data
+						tocEntry.instancesData.push({
+							iids: refInfo,
+							worldX: ei.worldX,
+							worldY: ei.worldY,
+							widPx: ei.width,
+							heiPx: ei.height,
+							fields: fields,
 						});
 					}
 				}
@@ -895,6 +920,39 @@ class Project {
 	}
 
 
+	public function getOrLoadEmbedImageSub(id:ldtk.Json.EmbedAtlas, x:Int, y:Int, w:Int, h:Int) : Null<data.DataTypes.CachedImage> {
+		try {
+			var thumbnailPath = id.getName() + "_" + Std.string(x) + "_" + Std.string(y) + "_" + Std.string(w) + "_" + Std.string(h);
+			if( !imageCache.exists(thumbnailPath) ) {
+				// Load original image
+				var cachedImg = getOrLoadEmbedImage(id);
+				if( cachedImg==null )
+					return null;
+
+				// Create sub tile cache
+				var subPixels = cachedImg.pixels.sub(x, y, w, h);
+				var pngBytes = subPixels.clone().toPNG();
+				var tex = h3d.mat.Texture.fromPixels(subPixels);
+				var b64 = haxe.crypto.Base64.encode(pngBytes);
+				imageCache.set( thumbnailPath, {
+					fileName: cachedImg.fileName,
+					relPath: cachedImg.relPath,
+					bytes: pngBytes,
+					base64: b64,
+					pixels: subPixels,
+					tex: tex,
+				});
+			}
+
+			return imageCache.get(thumbnailPath);
+		}
+		catch( e:Dynamic ) {
+			App.LOG.error(e);
+			return null;
+		}
+	}
+
+
 	public function getOrLoadImage(relPath:String) : Null<data.DataTypes.CachedImage> {
 		try {
 			if( !imageCache.exists(relPath) ) {
@@ -922,7 +980,41 @@ class Project {
 					tex: texture,
 				});
 			}
+
 			return imageCache.get(relPath);
+		}
+		catch( e:Dynamic ) {
+			App.LOG.error(e);
+			return null;
+		}
+	}
+
+
+	public function getOrLoadImageSub(relPath:String, x:Int, y:Int, w:Int, h:Int) : Null<data.DataTypes.CachedImage> {
+		try {
+			var thumbnailPath = relPath + "_" + Std.string(x) + "_" + Std.string(y) + "_" + Std.string(w) + "_" + Std.string(h);
+			if( !imageCache.exists(thumbnailPath) ) {
+				// Load original image
+				var cachedImg = getOrLoadImage(relPath);
+				if( cachedImg==null )
+					return null;
+
+				// Create sub tile cache
+				var subPixels = cachedImg.pixels.sub(x, y, w, h);
+				var pngBytes = subPixels.clone().toPNG();
+				var tex = h3d.mat.Texture.fromPixels(subPixels);
+				var b64 = haxe.crypto.Base64.encode(pngBytes);
+				imageCache.set( thumbnailPath, {
+					fileName: cachedImg.fileName,
+					relPath: cachedImg.relPath,
+					bytes: pngBytes,
+					base64: b64,
+					pixels: subPixels,
+					tex: tex,
+				});
+			}
+
+			return imageCache.get(thumbnailPath);
 		}
 		catch( e:Dynamic ) {
 			App.LOG.error(e);
@@ -1084,6 +1176,10 @@ class Project {
 				case _:
 			}
 
+		for(ld in defs.layers)
+			if( ld.biomeFieldUid!=null && ld.getBiomeEnumDef()==enumDef )
+				return true;
+
 		return false;
 	}
 
@@ -1107,6 +1203,13 @@ class Project {
 					case _:
 				}
 		}
+
+		for(ld in defs.layers)
+			if( ld.biomeFieldUid!=null && ld.getBiomeEnumDef()==enumDef )
+				for( rg in ld.autoRuleGroups )
+					for( bid in rg.requiredBiomeValues )
+						if( bid==val )
+							return true;
 
 		return false;
 	}
@@ -1152,6 +1255,7 @@ class Project {
 		if( id==null )
 			return null;
 
+		id = Std.string(id);
 		id = StringTools.trim(id);
 
 		// Replace any invalid char with "_"
@@ -1253,5 +1357,13 @@ class Project {
 
 		var td = defs.getTilesetDef(r.tilesetUid);
 		return td!=null ? td.createTileHtmlImageFromRect(r, sizePx) : null;
+	}
+
+
+	public function recountIntGridValuesInAllLayerInstances() {
+		for(w in worlds)
+		for(l in w.levels)
+		for(li in l.layerInstances)
+			li.recountAllIntGridValues();
 	}
 }

@@ -74,7 +74,7 @@ class EntityRender extends dn.Process {
 				if( ld.uid==defUid )
 					destroy();
 
-			case WorldLevelMoved(_), WorldSettingsChanged, LayerInstanceSelected, LevelSelected(_):
+			case WorldLevelMoved(_), WorldSettingsChanged, LayerInstanceSelected(_), LevelSelected(_):
 				renderAll();
 
 			case EntityDefChanged:
@@ -337,7 +337,7 @@ class EntityRender extends dn.Process {
 				continue;
 
 			var fi = refEi.getEntityRefFieldTo(ei,true);
-			if( fi==null )
+			if( fi==null || !fi.def.refLinkIsDisplayed() )
 				continue;
 
 			var col = refEi.getSmartColor(false);
