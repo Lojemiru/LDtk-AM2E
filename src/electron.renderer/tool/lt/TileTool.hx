@@ -122,7 +122,7 @@ class TileTool extends tool.LayerTool<data.DataTypes.TilesetSelection> {
 						}
 
 					case Remove:
-						curLayerInstance.removeAllGridTiles(cx,cy);
+						curLayerInstance.removeAllGridTiles(cx,cy, true);
 
 					case _:
 				}
@@ -155,13 +155,14 @@ class TileTool extends tool.LayerTool<data.DataTypes.TilesetSelection> {
 
 				case Remove:
 					// Erase rectangle
-					if( editor.curLayerInstance.hasAnyGridTile(cx,cy) ) {
-						editor.curLevelTimeline.markGridChange(curLayerInstance, cx, cy);
-						if( settings.v.tileStacking )
-							editor.curLayerInstance.removeTopMostGridTile(cx,cy);
-						else
-							editor.curLayerInstance.removeAllGridTiles(cx,cy);
-						anyChange = true;
+					editor.curLevelTimeline.markGridChange(curLayerInstance, cx, cy);
+					if( settings.v.tileStacking ) {
+						if( editor.curLayerInstance.removeTopMostGridTile(cx,cy, true) )
+							anyChange = true;
+					}
+					else {
+						if( editor.curLayerInstance.removeAllGridTiles(cx,cy, true) )
+							anyChange = true;
 					}
 			}
 		}
@@ -273,14 +274,17 @@ class TileTool extends tool.LayerTool<data.DataTypes.TilesetSelection> {
 		var anyChange = false;
 		if( isRandomMode() || isPaintingSingleTile() ) {
 			// Remove tiles one-by-one
-			if( editor.curLayerInstance.hasAnyGridTile(cx,cy) && !hasAlreadyPaintedAt(cx,cy) ) {
+			if( !hasAlreadyPaintedAt(cx,cy) ) {
 				if( settings.v.tileStacking ) {
-					markAsPainted(cx,cy);
-					editor.curLayerInstance.removeTopMostGridTile(cx,cy);
+					if( editor.curLayerInstance.removeTopMostGridTile(cx,cy,true) ) {
+						markAsPainted(cx,cy);
+						anyChange = true;
+					}
 				}
-				else
-					editor.curLayerInstance.removeAllGridTiles(cx,cy);
-				anyChange = true;
+				else {
+					if( editor.curLayerInstance.removeAllGridTiles(cx,cy,true) )
+						anyChange = true;
+				}
 			}
 		}
 		else {
@@ -297,10 +301,11 @@ class TileTool extends tool.LayerTool<data.DataTypes.TilesetSelection> {
 			for(tid in sel.ids) {
 				var tcx = cx + ( curTilesetDef.getTileCx(tid) - left ) * gridDiffScale;
 				var tcy = cy + ( curTilesetDef.getTileCy(tid) - top ) * gridDiffScale;
-				if( editor.curLayerInstance.hasAnyGridTile(tcx,tcy) && !hasAlreadyPaintedAt(tcx,tcy) ) {
-					editor.curLayerInstance.removeAllGridTiles(tcx,tcy);
-					editor.curLevelTimeline.markGridChange(curLayerInstance, tcx, tcy);
-					anyChange = true;
+				if( !hasAlreadyPaintedAt(tcx,tcy) ) {
+					if( editor.curLayerInstance.removeAllGridTiles(tcx,tcy,true) ) {
+						editor.curLevelTimeline.markGridChange(curLayerInstance, tcx, tcy);
+						anyChange = true;
+					}
 				}
 			}
 		}
@@ -393,41 +398,43 @@ class TileTool extends tool.LayerTool<data.DataTypes.TilesetSelection> {
 		N.msg("Saved selection");
 	}
 
-	override function onKeyPress(keyId:Int) {
-		super.onKeyPress(keyId);
+	override function onAppCommand(cmd:AppCommand) {
+		super.onAppCommand(cmd);
 
-		if( !Editor.ME.hasInputFocus() )
-			switch keyId {
-				case K.R if( !App.ME.hasAnyToggleKeyDown() ):
-					setMode( isRandomMode() ? Stamp : Random );
-					ui.Notification.quick((isRandomMode()?"Random":"Stamp")+" mode");
-					editor.ge.emit(ToolOptionChanged);
-					palette.render();
+		switch cmd {
+			case C_FlipX:
+				flipX = !flipX;
+				N.quick("X-flip: "+L.onOff(flipX));
+				customCursor(new hxd.Event(EMove), lastMouse);
 
-				case K.S if( App.ME.isShiftDown() ):
-					saveSelection();
+			case C_FlipY:
+				flipY = !flipY;
+				N.quick("Y-flip: "+L.onOff(flipY));
+				customCursor(new hxd.Event(EMove), lastMouse);
 
-				case K.L if( !App.ME.hasAnyToggleKeyDown() ):
-					var saved = curTilesetDef.getSavedSelectionFor( getSelectedValue().ids[0] );
-					if( saved!=null && !selectedValuesIdentical(saved.ids) ) {
-						if( saved.ids.length>1 )
-							N.quick( L.t._("Loaded selection of ::n:: tiles", { n:saved.ids.length }) );
-						selectValue({
-							ids: saved.ids.copy(),
-							mode: saved.mode,
-						});
-						onValuePicking();
-					}
+			case C_ToggleTileRandomMode:
+				setMode( isRandomMode() ? Stamp : Random );
+				ui.Notification.quick((isRandomMode()?"Random":"Stamp")+" mode");
+				editor.ge.emit(ToolOptionChanged);
+				palette.render();
 
-				case K.X if( !App.ME.hasAnyToggleKeyDown() ):
-					flipX = !flipX;
-					N.quick("X-flip: "+L.onOff(flipX));
-					customCursor(new hxd.Event(EMove), lastMouse);
+			case C_SaveTileSelection:
+				saveSelection();
 
-				case K.Y if( !App.ME.hasAnyToggleKeyDown() ):
-					flipY = !flipY;
-					N.quick("Y-flip: "+L.onOff(flipY));
-					customCursor(new hxd.Event(EMove), lastMouse);
-			}
+			case C_LoadTileSelection:
+				var saved = curTilesetDef.getSavedSelectionFor( getSelectedValue().ids[0] );
+				if( saved!=null && !selectedValuesIdentical(saved.ids) ) {
+					if( saved.ids.length>1 )
+						N.quick( L.t._("Loaded selection of ::n:: tiles", { n:saved.ids.length }) );
+					selectValue({
+						ids: saved.ids.copy(),
+						mode: saved.mode,
+					});
+					onValuePicking();
+				}
+
+			case _:
+		}
 	}
+
 }

@@ -20,6 +20,9 @@ class Level {
 
 	public var externalRelPath: Null<String>;
 
+	public var background : Null<data.def.CompositeBackgroundDef>;
+	public var backgroundUid : Null<Int>;
+
 	public var bgRelPath: Null<String>;
 	public var bgPos: Null<ldtk.Json.BgImagePos>;
 	public var bgPivotX: Float;
@@ -114,12 +117,17 @@ class Level {
 				var nears = _world.levels.filter( (ol)->
 					ol!=this && getBoundsDist(ol)==0
 					&& ol.worldDepth==worldDepth
-					&& !( ( ol.worldX>=worldX+pxWid || ol.worldX+ol.pxWid<=worldX )
-						&& ( ol.worldY>=worldY+pxHei || ol.worldY+ol.pxHei<=worldY ) )
+					// && !( ( ol.worldX>=worldX+pxWid || ol.worldX+ol.pxWid<=worldX )
+						// && ( ol.worldY>=worldY+pxHei || ol.worldY+ol.pxHei<=worldY ) )
 					&& !dn.Lib.rectangleOverlaps(worldX,worldY,pxWid,pxHei, ol.worldX,ol.worldY,ol.pxWid,ol.pxHei)
 				);
 				nears.map( (l)->{
-					var dir = l.worldX>=worldX+pxWid ? "e"
+					var dir =
+						l.worldX == worldX+pxWid  &&  l.worldY == worldY+pxHei ? "se"
+						: l.worldX+l.pxWid == worldX  &&  l.worldY == worldY+pxHei ? "sw"
+						: l.worldX == worldX+pxWid  &&  l.worldY+l.pxHei == worldY ? "ne"
+						: l.worldX+l.pxWid == worldX  &&  l.worldY+l.pxHei == worldY ? "nw"
+						: l.worldX>=worldX+pxWid ? "e"
 						: l.worldX+l.pxWid<=worldX ? "w"
 						: l.worldY+l.pxHei<=worldY ? "n"
 						: "s";
@@ -147,7 +155,6 @@ class Level {
 			return o;
 		}
 
-
 		// World coords are not stored in JSON for automatically organized layouts
 		var jsonWorldX = worldX;
 		var jsonWorldY = worldY;
@@ -171,7 +178,12 @@ class Level {
 			__bgColor: JsonTools.writeColor( getBgColor() ),
 			bgColor: JsonTools.writeColor(bgColor, true),
 			useAutoIdentifier: useAutoIdentifier,
-
+			backgroundUid: {
+				if ( backgroundUid==null)
+					null;
+				else
+					backgroundUid;
+			},
 			bgRelPath: bgRelPath,
 			bgPos: JsonTools.writeEnum(bgPos, true),
 			bgPivotX: JsonTools.writeFloat(bgPivotX),
@@ -230,7 +242,7 @@ class Level {
 
 			layers : {
 				var out = [];
-				iterateLayerInstancesInRenderOrder( (li)->{
+				iterateLayerInstancesBottomToTop( (li)->{
 					var show = switch li.def.type {
 						case IntGrid: li.def.isAutoLayer();
 						case Entities: false;
@@ -294,7 +306,10 @@ class Level {
 		l.bgColor = JsonTools.readColor(json.bgColor, true);
 		l.externalRelPath = json.externalRelPath;
 		l.useAutoIdentifier = JsonTools.readBool(json.useAutoIdentifier, false); // older projects should keep their original IDs untouched
-
+		if ( json.backgroundUid!=null ) {
+			l.backgroundUid = JsonTools.readInt( json.backgroundUid, 0 );
+			l.background = p.defs.getCompositeBackgroundDef(l.backgroundUid);
+		}
 		l.bgRelPath = json.bgRelPath;
 		l.bgPos = JsonTools.readEnum(ldtk.Json.BgImagePos, json.bgPos, true);
 		l.bgPivotX = JsonTools.readFloat(json.bgPivotX, 0.5);
@@ -342,26 +357,28 @@ class Level {
 
 	/** Crawl an Array recursively and fixes unescaped \n chars **/
 	static function crawlArray(arr:Array<Dynamic>) {
-		for( i in 0...arr.length )
-			switch Type.typeof( arr[i] ) {
+		for( i in 0...arr.length ) {
+			var v : Dynamic = arr[i];
+			switch Type.typeof(v) {
 				case TObject:
-					crawlObjectRec(arr[i]);
+					crawlObjectRec(v);
 
 				case TClass(Array):
-					crawlArray(arr[i]);
+					crawlArray(v);
 
 				case TClass(String):
-					if( arr[i].indexOf("\n")>=0 )
-						arr[i] = StringTools.replace(arr[i], "\n", "\\n");
+					if( v.indexOf("\n")>=0 )
+						arr[i] = StringTools.replace(v, "\n", "\\n");
 
 				case _:
 			}
+		}
 	}
 
 
 
 	public inline function hasBgImage() {
-		return bgRelPath!=null;
+		return background!=null;
 	}
 
 
@@ -395,7 +412,14 @@ class Level {
 		if( !hasBgImage() )
 			return null;
 
-		var data = _project.getOrLoadImage(bgRelPath);
+		// TODO: Actually set this up lol
+		return null;
+
+		/*
+		// TODO: Un-hardcode this
+		var _img = backgrounds[0];
+
+		var data = _project.getOrLoadImage(_img.relPath);
 		if( data==null )
 			return null;
 
@@ -403,7 +427,7 @@ class Level {
 		var baseTileHei = data.pixels.height;
 		var sx = 1.0;
 		var sy = 1.0;
-		switch bgPos {
+		switch _img.pos {
 			case null:
 				throw "bgPos should not be null";
 
@@ -429,15 +453,16 @@ class Level {
 
 		return {
 			imgData: data,
-			tx: bgPivotX * (baseTileWid-subTileWid),
-			ty: bgPivotY * (baseTileHei-subTileHei),
+			tx: _img.pivotX * (baseTileWid-subTileWid),
+			ty: _img.pivotY * (baseTileHei-subTileHei),
 			tw: subTileWid,
 			th: subTileHei,
-			dispX: Std.int( bgPivotX * (pxWid - subTileWid*sx) ),
-			dispY: Std.int( bgPivotY * (pxHei - subTileHei*sy) ),
+			dispX: Std.int( _img.pivotX * (pxWid - subTileWid*sx) ),
+			dispY: Std.int( _img.pivotY * (pxHei - subTileHei*sy) ),
 			sx: sx,
 			sy: sy,
 		}
+		*/
 	}
 
 	public function createBgTiledTexture(?p:h2d.Object) : Null<dn.heaps.TiledTexture> {
@@ -445,10 +470,17 @@ class Level {
 		if( bgInf==null )
 			return null;
 
+		// TODO: Implement this lol
+		return null;
+
+		/*
+		// TODO: Un-hardcode this
+		var _img = backgrounds[0];
+
 		var t = h2d.Tile.fromTexture( bgInf.imgData.tex );
 		t = t.sub(bgInf.tx, bgInf.ty, bgInf.tw, bgInf.th);
 
-		var tile = (bgPos == ldtk.Json.BgImagePos.Repeat);
+		var tile = (_img.pos == ldtk.Json.BgImagePos.Repeat);
 
 		var w = tile ? pxWid : Std.int(bgInf.tw);
 		var h = tile ? pxHei : Std.int(bgInf.th);
@@ -457,8 +489,8 @@ class Level {
 		tt.scaleX = bgInf.sx;
 		tt.scaleY = bgInf.sy;
 		if( tile ) {
-			tt.alignPivotX = bgPivotX;
-			tt.alignPivotY = bgPivotY;
+			tt.alignPivotX = _img.pivotX;
+			tt.alignPivotY = _img.pivotY;
 		}
 		else {
 			tt.x = bgInf.dispX;
@@ -466,6 +498,125 @@ class Level {
 		}
 
 		return tt;
+		*/
+	}
+
+	public function getBgTileInfosArray() : Null<Array<{ imgData:data.DataTypes.CachedImage, tx:Float, ty:Float, tw:Float, th:Float, dispX:Int, dispY:Int, sx:Float, sy:Float }>> {
+		if( !hasBgImage() )
+			return null;
+
+		// TODO: this is the SAME flipping code as in Background.hx!!!!!
+
+		var output = new Array<{ imgData:data.DataTypes.CachedImage, tx:Float, ty:Float, tw:Float, th:Float, dispX:Int, dispY:Int, sx:Float, sy:Float }>();
+		var i = 0;
+
+		for ( _img in background.backgrounds ) {
+			var data = _project.getOrLoadImage(_img.relPath);
+			
+			if( data==null ) {
+				output.push(null);
+			}
+			else {
+				var baseTileWid = data.pixels.width;
+				var baseTileHei = data.pixels.height;
+				var sx = 1.0;
+				var sy = 1.0;
+				switch _img.pos {
+					case null:
+						throw "bgPos should not be null";
+
+					case Unscaled:
+
+					case Contain:
+						sx = sy = M.fmin( pxWid/baseTileWid, pxHei/baseTileHei );
+
+					case Cover:
+						sx = sy = M.fmax( pxWid/baseTileWid, pxHei/baseTileHei );
+
+					case CoverDirty:
+						sx = pxWid / baseTileWid;
+						sy = pxHei/ baseTileHei;
+
+					case Repeat:
+						// Do nothing, tiling shenanigans are handled in createBgTiledTexture.
+
+					case Parallax:
+						// huh
+				}
+
+				// Crop tile
+				var subTileWid = M.fmin(baseTileWid, pxWid/sx);
+				var subTileHei = M.fmin(baseTileHei, pxHei/sy);
+
+				output.push( {
+					imgData: data,
+					tx: _img.pivotX * (baseTileWid-subTileWid),
+					ty: _img.pivotY * (baseTileHei-subTileHei),
+					tw: subTileWid,
+					th: subTileHei,
+					dispX: Std.int( _img.pivotX * (pxWid - subTileWid*sx) ),
+					dispY: Std.int( _img.pivotY * (pxHei - subTileHei*sy) ),
+					sx: sx,
+					sy: sy,
+				} );
+			}
+
+			i++;
+		}
+
+		return output;
+	}
+
+	public function createBgTiledTextures(?p:h2d.Object) : Null<Array<dn.heaps.TiledTexture>> {
+		if ( !hasBgImage() )
+			return null;
+
+		var bgInfos = getBgTileInfosArray();
+		if ( bgInfos==null )
+			return null;
+
+		var output = new Array<dn.heaps.TiledTexture>();
+		var i = 0;
+
+		for ( bgInf in bgInfos ) {
+			if ( bgInf!=null ) {
+				
+				var _img = background.backgrounds[i];
+
+				var t = h2d.Tile.fromTexture( bgInf.imgData.tex );
+				t = t.sub(bgInf.tx, bgInf.ty, bgInf.tw, bgInf.th);
+
+				var tile = false;
+				var w = Std.int(bgInf.tw);
+				var h = Std.int(bgInf.th);
+
+				if (_img.pos == ldtk.Json.BgImagePos.Repeat || _img.pos == ldtk.Json.BgImagePos.Parallax) {
+					tile = true;
+
+					// TODO: we need to allow for DISABLING these lines independently to allow for vertical/horizontal tiling split
+					w = pxWid;
+					h = pxHei;
+				}
+
+				var tt = new dn.heaps.TiledTexture(w, h, t, p);
+				tt.scaleX = bgInf.sx;
+				tt.scaleY = bgInf.sy;
+				if( tile ) {
+					tt.alignPivotX = _img.pivotX;
+					tt.alignPivotY = _img.pivotY;
+				}
+				else {
+					tt.x = bgInf.dispX;
+					tt.y = bgInf.dispY;
+				}
+
+				output.push(tt);
+				
+			}
+			i++;
+		}
+
+		return output;
 	}
 
 
@@ -481,11 +632,15 @@ class Level {
 		return levelX>=0 && levelX<pxWid && levelY>=0 && levelY<pxHei;
 	}
 
-	public inline function inBoundsWorld(worldX:Float, worldY:Float) {
-		return worldX>=this.worldX
-			&& worldX<this.worldX+pxWid
-			&& worldY>=this.worldY
-			&& worldY<this.worldY+pxHei;
+	public inline function inBoundsWorld(worldX:Float, worldY:Float, padPx=0) {
+		return worldX >= this.worldX-padPx
+			&& worldX < this.worldX+pxWid+padPx
+			&& worldY >= this.worldY-padPx
+			&& worldY < this.worldY+pxHei+padPx;
+	}
+
+	public inline function otherLevelCoordInBounds(otherLevel:Level, levelX:Int, levelY:Int, padPx=0) {
+		return inBoundsWorld(otherLevel.worldX+levelX, otherLevel.worldY+levelY, padPx);
 	}
 
 	public function isWorldOver(wx:Int, wy:Int, padding=0) {
@@ -663,6 +818,8 @@ class Level {
 			li.applyNewBounds(newPxLeft, newPxTop, newPxWid, newPxHei);
 		pxWid = newPxWid;
 		pxHei = newPxHei;
+		for(li in layerInstances)
+			li.recountAllIntGridValues();
 
 		// Remove entities out of bounds
 		var n = 0;
@@ -671,7 +828,7 @@ class Level {
 			var ei = null;
 			while( i<li.entityInstances.length ) {
 				ei = li.entityInstances[i];
-				if( !inBounds(ei.x, ei.y) ) {
+				if( !ei.def.allowOutOfBounds && !inBounds(ei.x, ei.y) ) {
 					App.LOG.general('Removed out-of-bounds entity ${ei.def.identifier} in $li');
 					li.entityInstances.splice(i,1);
 					n++;
@@ -712,9 +869,11 @@ class Level {
 					}
 				}
 
+			// TODO: Implement this lol
+
 			// Level background images
-			if( _cachedFirstError==NoError && bgRelPath!=null && !_project.isImageLoaded(bgRelPath) )
-				_cachedFirstError = InvalidBgImage;
+			//if( _cachedFirstError==NoError && backgrounds.length > 0 && backgrounds[0].relPath!=null && !_project.isImageLoaded(backgrounds[0].relPath) )
+			//	_cachedFirstError = InvalidBgImage;
 
 			return _cachedFirstError;
 		}
@@ -733,6 +892,14 @@ class Level {
 			invalidateJsonCache();
 		}
 		return fieldInstances.get(fd.uid);
+	}
+
+	public function getFieldInstanceByUid(fdUid:Int, createIfMissing:Bool) : Null<data.inst.FieldInstance> {
+		if( createIfMissing && !fieldInstances.exists(fdUid) ) {
+			fieldInstances.set( fdUid, new data.inst.FieldInstance(_project, fdUid) );
+			invalidateJsonCache();
+		}
+		return fieldInstances.get(fdUid);
 	}
 
 
@@ -798,11 +965,19 @@ class Level {
 
 	/* RENDERING *******************/
 
-	public function iterateLayerInstancesInRenderOrder( eachLayer:data.inst.LayerInstance->Void ) {
+	public function iterateLayerInstancesBottomToTop( eachLayer:data.inst.LayerInstance->Void ) {
 		var i = _project.defs.layers.length-1;
 		while( i>=0 ) {
 			eachLayer( getLayerInstance(_project.defs.layers[i]) );
 			i--;
+		}
+	}
+
+	public function iterateLayerInstancesTopToBottom( eachLayer:data.inst.LayerInstance->Void ) {
+		var i = 0;
+		while( i<_project.defs.layers.length ) {
+			eachLayer( getLayerInstance(_project.defs.layers[i]) );
+			i++;
 		}
 	}
 }

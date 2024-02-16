@@ -97,6 +97,16 @@ class LevelInstanceForm {
 				if( isUsingLevel(l) )
 					updateFieldsForm();
 
+				// Biome field changed
+				var invalidatedLis = [];
+				for( ld in project.defs.layers )
+					if( ld.biomeFieldUid==fi.defUid ) {
+						var li = l.getLayerInstance(ld);
+						invalidatedLis.push(li);
+					}
+				if( invalidatedLis.length>0 )
+					editor.ge.emit( AutoLayerRenderingChanged(invalidatedLis) );
+
 			case _:
 		}
 	}
@@ -248,88 +258,46 @@ class LevelInstanceForm {
 		else
 			jIsDefault.hide();
 
-		// Create bg image picker
-		jForm.find("dd.bg .imagePicker").remove();
-		var jImg = JsTools.createImagePicker(project, level.bgRelPath, (relPath)->{
-			var old = level.bgRelPath;
-			if( relPath==null && old!=null ) {
-				// Remove
-				level.bgRelPath = null;
-				level.bgPos = null;
-				editor.watcher.stopWatchingRel( old );
-			}
-			else if( relPath!=null ) {
-				var chk = project.checkImageBeforeLoading(relPath);
-				if( chk!=Ok ) {
-					ui.modal.dialog.Message.error( L.imageLoadingMessage(relPath, chk) );
-					return;
-				}
-
-				// Add or update
-				var img = project.getOrLoadImage(relPath);
-				if( img==null ) {
-					ui.modal.dialog.Message.error( L.t._("Could not load this image") );
-					return;
-				}
-				level.bgRelPath = relPath;
-				if( old!=null )
-					editor.watcher.stopWatchingRel( old );
-				editor.watcher.watchImage(relPath);
-				if( old==null )
-					level.bgPos = Cover;
-			}
-			onFieldChange();
-		});
-		jImg.prependTo( jForm.find("dd.bg") );
-
-		if( level.bgRelPath!=null )
-			jForm.find("dd.bg .pos").show();
-		else
-			jForm.find("dd.bg .pos").hide();
-
-
-		// Bg position
+		// Tags source background selector
 		var jSelect = jForm.find("#bgPos");
 		jSelect.empty();
-		if( level.bgPos!=null ) {
-			for(k in ldtk.Json.BgImagePos.getConstructors()) {
-				var e = ldtk.Json.BgImagePos.createByName(k);
-				var jOpt = new J('<option value="$k"/>');
-				jSelect.append(jOpt);
-				jOpt.text( switch e {
-					case Unscaled: Lang.t._("Not scaled");
-					case Contain: Lang.t._("Fit inside (keep aspect ratio)");
-					case Cover: Lang.t._("Cover level (keep aspect ratio)");
-					case CoverDirty: Lang.t._("Cover (dirty scaling)");
-					case Repeat: Lang.t._("Repeat");
-				});
+		var jOpt = new J('<option value="">-- None --</option>');
+		jOpt.appendTo(jSelect);
+		var tagGroups = project.defs.getAllCompositeBackgroundsGroupedByTag();
+		for( group in tagGroups ) {
+			var jOptGroup = new J('<optgroup label="All composite backgrounds"/>');
+			jOptGroup.appendTo(jSelect);
+			if( tagGroups.length>1 )
+				jOptGroup.attr('label', group.tag==null ? L._Untagged() : group.tag);
+			for(ed in group.all) {
+				var jOpt = new J('<option value="${ed.uid}">${ed.identifier}</option>');
+				jOpt.appendTo(jOptGroup);
 			}
-			jSelect.val( level.bgPos.getName() );
-			jSelect.change( (_)->{
-				level.bgPos = ldtk.Json.BgImagePos.createByName( jSelect.val() );
-				onFieldChange();
-			});
 		}
 
-		// Bg pivot
-		var jPivot = jForm.find(".pos>.pivot");
-		jPivot.empty();
-		if( level.hasBgImage() ) {
-			var imgInf = level.getBgTileInfos();
-			if( imgInf!=null ) {
-				jPivot.append( JsTools.createPivotEditor(
-					level.bgPivotX, level.bgPivotY,
-					true,
-					Std.int( imgInf.tw ),
-					Std.int( imgInf.th ),
-					(x,y)->{
-						level.bgPivotX = x;
-						level.bgPivotY = y;
-						onFieldChange();
-					}
-				));
+		var oldBg = level.background;
+		jSelect.change( ev->{
+			var uid = Std.parseInt( jSelect.val() );
+			if( !M.isValidNumber(uid) )
+				uid = null;
+
+			var newBg = project.defs.getCompositeBackgroundDef(uid);
+
+			function _apply() {
+				level.background = newBg;
+				level.backgroundUid = newBg.uid;
+				editor.ge.emit( LevelSettingsChanged(level) );
 			}
+
+			_apply();
+ 		});
+
+		if( level.background!=null ) {
+			jSelect.removeClass("noValue");
+			jSelect.val(level.background.uid);
 		}
+		else
+			jSelect.addClass("noValue");
 
 		JsTools.parseComponents(jWrapper);
 	}

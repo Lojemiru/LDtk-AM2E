@@ -145,7 +145,7 @@ class Clipboard {
 					'Rule "${json.uid}"';
 
 				case CRuleGroup:
-					var json : data.DataTypes.AutoLayerRuleGroup = jsonObj;
+					var json : data.def.AutoLayerRuleGroupDef = jsonObj;
 					'Rule group "${json.name}"';
 
 				case CLayerDef:
@@ -163,6 +163,14 @@ class Clipboard {
 				case CTilesetDef:
 					var json : ldtk.Json.TilesetDefJson = jsonObj;
 					'Tileset definition "${json.identifier}"';
+
+				case CBackgroundDef:
+					var json : ldtk.Json.BackgroundDefJson = jsonObj;
+					'Background definition "${json.identifier}"';
+
+				case CCompositeBackgroundDef:
+					var json : ldtk.Json.CompositeBackgroundDefJson = jsonObj;
+					'Composite Background definition "${json.identifier}"';
 
 				case CFieldDef:
 					var json : ldtk.Json.FieldDefJson = jsonObj;

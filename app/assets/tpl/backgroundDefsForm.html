@@ -1,0 +1,41 @@
+<div class="buttons">
+	<button type="button" class="create" title="Add a background.">+ single value</button>
+</div>
+
+<ul class="niceList backgroundList"></ul>
+
+<dl class="form">
+
+	<dt>
+		<label for="bName">Identifier</label>
+		<info class="identifier"></info>
+	</dt>
+	<dd>
+		<input type="text" name="name" id="bName"/>
+	</dd>
+
+	<dt>
+		<label for="bImage">Image</label>
+		<info class="image"></info>
+	</dt>
+	<dd class="bg">
+		<div class="pos">
+			<select id="bgPos"></select>
+			<span class="pivot"></span>
+		</div>
+	</dd>
+
+	<dd>
+		<span>Repeat options:</span>
+		<label for="repeatX">
+			<input type="checkbox" id="repeatX" title="Tile along the X axis."/>
+			Horizontal
+		</label>
+
+		<label for="repeatY">
+			<input type="checkbox" id="repeatY" title="Tile along the Y axis."/>
+			Vertical
+		</label>
+	</dd>
+
+</dl>

@@ -33,18 +33,18 @@ class IntGridPalette extends ui.ToolPalette {
 		jMode.appendTo(jTopBar);
 		jMode.off().click(_->{
 			var m = new ui.modal.ContextMenu(jMode);
-			m.add({
+			m.addAction({
 				label:L.t._("List"),
-				icon: "listView",
+				iconId: "listView",
 				cb: ()->{
 					App.ME.settings.deleteUiState(stateId, project);
 					doRender();
 				}
 			});
-			for(n in [2,3,4,5]) {
-				m.add({
+			for(n in [2,3,4,5,6,7,8,9,10]) {
+				m.addAction({
 					label:L.t._("::n:: columns", {n:n}),
-					icon: "gridView",
+					iconId: "gridView",
 					cb: ()->{
 						App.ME.settings.setUiStateInt(stateId, n, project);
 						doRender();
@@ -66,7 +66,7 @@ class IntGridPalette extends ui.ToolPalette {
 				jTitle.attr("default", "open");
 			}
 
-			var jLi = new J('<li class="subList"> <ul/> </li>');
+			var jLi = new J('<li class="subList"> <ul class="niceList"/> </li>');
 			jLi.attr("data-groupIdx", Std.string(groupIdx));
 			jLi.appendTo(jList);
 			var jSubList = jLi.find("ul");
@@ -104,6 +104,15 @@ class IntGridPalette extends ui.ToolPalette {
 						return;
 					tool.selectValue(curValue);
 					render();
+				});
+
+				ui.modal.ContextMenu.attachTo_new(jLi, false, (ctx:ui.modal.ContextMenu)->{
+					ctx.addAction({
+						label: L.t._("Edit layer"),
+						cb: ()->{
+							App.ME.executeAppCommand(C_OpenLayerPanel);
+						},
+					});
 				});
 			}
 
