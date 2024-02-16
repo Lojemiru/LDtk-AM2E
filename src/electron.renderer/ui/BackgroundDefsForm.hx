@@ -101,7 +101,7 @@ class BackgroundDefsForm {
 		jList.off().empty();
 
 		// List context menu
-		ui.modal.ContextMenu.addTo(jList, false, [
+		ui.modal.ContextMenu.attachTo(jList, false, [
 			{
 				label: L._Paste(),
 				cb: ()->{
@@ -120,7 +120,31 @@ class BackgroundDefsForm {
 			if( curBackground==bg )
 				li.addClass("active");
 
-			ui.modal.ContextMenu.addTo(li, [
+			ui.modal.ContextMenu.attachTo_new(li, (ctx:ui.modal.ContextMenu)->{
+				ctx.addElement( Ctx_CopyPaster({
+					elementName: "background",
+					clipType: CBackgroundDef,
+					copy: ()->App.ME.clipboard.copyData(CBackgroundDef, bg.toJson()),
+					cut: ()->{
+						App.ME.clipboard.copyData(CBackgroundDef, bg.toJson());
+						deleteBackground(bg);
+					},
+					paste: ()->{
+						var copy = pasteBackgroundDef(App.ME.clipboard, bg);
+						editor.ge.emit(BackgroundDefAdded(copy));
+						selectBackground(copy);
+					},
+					duplicate: ()->{
+						var copy = duplicateBackgroundDef(bg);
+						editor.ge.emit( BackgroundDefAdded(copy) );
+						onAnyChange();
+						selectBackground(copy);
+					},
+					delete: ()->deleteBackground(bg),
+				}) );
+			});
+
+			/*ui.modal.ContextMenu.attachTo(li, [
 				{
 					label: L._Copy(),
 					cb: ()->App.ME.clipboard.copyData(CBackgroundDef, bg.toJson()),
@@ -151,7 +175,7 @@ class BackgroundDefsForm {
 					}
 				},
 				{ label: L._Delete(), cb:()->deleteBackground(bg) },
-			]);
+			]);*/
 
 			li.click( function(_) selectBackground(bg) );
 		}

@@ -88,6 +88,12 @@ class EditCompositeBackgroundDefs extends ui.modal.Panel {
 			curTd.tags,
 			()->editor.ge.emit(CompositeBackgroundDefChanged(curTd)),
 			()->project.defs.getRecallTags(project.defs.compositeBackgrounds, td->td.tags),
+			()->project.defs.compositeBackgrounds.map( td->td.tags ),
+			(oldT,newT)->{
+				for(td in project.defs.compositeBackgrounds)
+					td.tags.rename(oldT,newT);
+				editor.ge.emit( CompositeBackgroundDefChanged(curTd) );
+			},
 			true
 		);
 		jForm.find("#tags").empty().append(ted.jEditor);
@@ -101,7 +107,7 @@ class EditCompositeBackgroundDefs extends ui.modal.Panel {
 		jList.empty();
 
 		// List context menu
-		ContextMenu.addTo(jList, false, [
+		ContextMenu.attachTo(jList, false, [
 			{
 				label: L._Paste(),
 				cb: ()->{
@@ -119,25 +125,14 @@ class EditCompositeBackgroundDefs extends ui.modal.Panel {
 			if( tagGroups.length>1 ) {
 				var jSep = new J('<li class="title collapser"/>');
 				jSep.text( group.tag==null ? L._Untagged() : group.tag );
-				jSep.appendTo(jList);
 				jSep.attr("id", project.iid+"_tileset_tag_"+group.tag);
 				jSep.attr("default", "open");
-
-				// Rename
-				if( group.tag!=null ) {
-					var jLinks = new J('<div class="links"> <a> <span class="icon edit"></span> </a> </div>');
-					jSep.append(jLinks);
-					TagEditor.attachRenameAction( jLinks.find("a"), group.tag, (t)->{
-						for(td in project.defs.compositeBackgrounds)
-							td.tags.rename(group.tag, t);
-						editor.ge.emit( CompositeBackgroundDefChanged(curTd) );
-					});
-				}
+				jSep.appendTo(jList);
 			}
 
 			var jLi = new J('<li class="subList"/>');
 			jLi.appendTo(jList);
-			var jSubList = new J('<ul/>');
+			var jSubList = new J('<ul class="niceList compact"/>');
 			jSubList.appendTo(jLi);
 
 			for(td in group.all) {
@@ -151,40 +146,28 @@ class EditCompositeBackgroundDefs extends ui.modal.Panel {
 
 				jLi.click( function(_) selectCompositeBackground(td) );
 
-				ContextMenu.addTo(jLi, [
-					{
-						label: L._Copy(),
-						cb: ()->App.ME.clipboard.copyData(CCompositeBackgroundDef, td.toJson()),
-					},
-					{
-						label: L._Cut(),
-						cb: ()->{
+				ContextMenu.attachTo_new(jLi, (ctx:ContextMenu)->{
+					ctx.addElement( Ctx_CopyPaster({
+						elementName: "composite background",
+						clipType: CCompositeBackgroundDef,
+						copy: ()->App.ME.clipboard.copyData(CCompositeBackgroundDef, td.toJson()),
+						cut: ()->{
 							App.ME.clipboard.copyData(CCompositeBackgroundDef, td.toJson());
 							deleteCompositeBackgroundDef(td);
 						},
-					},
-					{
-						label: L._PasteAfter(),
-						cb: ()->{
+						paste: ()->{
 							var copy = project.defs.pasteCompositeBackgroundDef(App.ME.clipboard, td);
 							editor.ge.emit( CompositeBackgroundDefAdded(copy) );
 							selectCompositeBackground(copy);
 						},
-						enable: ()->App.ME.clipboard.is(CCompositeBackgroundDef),
-					},
-					{
-						label: L._Duplicate(),
-						cb: ()-> {
+						duplicate: ()->{
 							var copy = project.defs.duplicateCompositeBackgroundDef(td);
 							editor.ge.emit( CompositeBackgroundDefAdded(copy) );
 							selectCompositeBackground(copy);
 						},
-					},
-					{
-						label: L._Delete(),
-						cb: deleteCompositeBackgroundDef.bind(td),
-					},
-				]);
+						delete: ()->deleteCompositeBackgroundDef(td),
+					}) );
+				});
 			}
 
 			// Make list sortable

@@ -200,7 +200,7 @@ class Editor extends Page {
 		});
 
 		jMainPanel.find("button.editCompositeBackgrounds").click( function(_) {
-			executeAppCommand(C_OpenCompositeBackgroundPanel);
+			App.ME.executeAppCommand(C_OpenCompositeBackgroundPanel);
 		});
 
 

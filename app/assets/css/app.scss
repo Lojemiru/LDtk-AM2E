@@ -10374,7 +10374,7 @@ $patternSize : 32px;
 
 .window.panel.editCompositeBackgroundDefs {
 	.mainList ul:empty::before {
-		content: "No composite background";
+		content: "No composite backgrounds";
 	}
 
 	.content {
@@ -10416,7 +10416,6 @@ $patternSize : 32px;
 				}
 			}
 		}
-		
 	}
 }
 
