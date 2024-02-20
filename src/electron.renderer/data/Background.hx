@@ -11,6 +11,12 @@ class Background {
 	public var pos: Null<ldtk.Json.BgImagePos>;
 	public var pivotX: Float;
 	public var pivotY: Float;
+
+	public var parallaxX: Float;
+	public var parallaxY: Float;
+
+	public var repeatX: Bool;
+	public var repeatY: Bool;
 	
 
 	public function new(p:Project, uid:Int) {
@@ -20,6 +26,12 @@ class Background {
 
         pivotX = 0;
         pivotY = 0;
+
+        parallaxX = 0;
+        parallaxY = 0;
+
+        repeatX = true;
+        repeatY = true;
 	}
 
 	function set_identifier(id:String) {
@@ -34,7 +46,7 @@ class Background {
 		return relPath!=null;
 	}
 
-	public function getImageInfo(pxWid:Int, pxHei:Int) : Null<{ imgData:data.DataTypes.CachedImage, tx:Float, ty:Float, tw:Float, th:Float, dispX:Int, dispY:Int, sx:Float, sy:Float }> {
+	public function getImageInfo(pxWid:Int, pxHei:Int) : Null<{ imgData:data.DataTypes.CachedImage, tx:Float, ty:Float, tw:Float, th:Float, dispX:Int, dispY:Int, sx:Float, sy:Float, px:Float, py:Float, repeatX:Bool, repeatY:Bool }> {
 		if( !hasImage() )
 			return null;
 
@@ -46,6 +58,8 @@ class Background {
 		var baseTileHei = data.pixels.height;
 		var sx = 1.0;
 		var sy = 1.0;
+		var px = 0.0;
+		var py = 0.0;
 		switch pos {
 			case null:
 				throw "pos should not be null";
@@ -67,6 +81,9 @@ class Background {
 
 			case Parallax:
 				// ahhhhhhh
+				px = parallaxX;
+				py = parallaxY;
+
 		}
 
 		// Crop tile
@@ -83,6 +100,10 @@ class Background {
 			dispY: Std.int( pivotY * (pxHei - subTileHei*sy) ),
 			sx: sx,
 			sy: sy,
+			px: px,
+			py: py,
+			repeatX: repeatX,
+			repeatY: repeatY,
 		}
 	}
 
@@ -94,6 +115,10 @@ class Background {
 			pos: JsonTools.writeEnum(pos, true),
 			pivotX: JsonTools.writeFloat(pivotX),
 			pivotY: JsonTools.writeFloat(pivotY),
+			parallaxX: JsonTools.writeFloat(parallaxX),
+			parallaxY: JsonTools.writeFloat(parallaxY),
+			repeatX: repeatX,
+			repeatY: repeatY,
 		}
 	}
 
@@ -105,6 +130,10 @@ class Background {
 		bg.pos = JsonTools.readEnum(ldtk.Json.BgImagePos, json.pos, true);
 		bg.pivotX = JsonTools.readFloat(json.pivotX);
 		bg.pivotY = JsonTools.readFloat(json.pivotY);
+		bg.parallaxX = JsonTools.readFloat(json.parallaxX, 0);
+		bg.parallaxY = JsonTools.readFloat(json.parallaxY, 0);
+		bg.repeatX = JsonTools.readBool(json.repeatX, true);
+		bg.repeatY = JsonTools.readBool(json.repeatY, true);
 
 		return bg;
 	}

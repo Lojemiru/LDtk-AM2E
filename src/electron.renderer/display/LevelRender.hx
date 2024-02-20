@@ -115,6 +115,7 @@ class LevelRender extends dn.Process {
 				root.y = M.round( editor.camera.height*0.5 - camera.levelY * camera.adjustedZoom );
 				updateGridPos();
 				invalidateGrid();
+				updateBgParallax();
 
 			case ProjectSaved, BeforeProjectSaving:
 				invalidateUiAndBg();
@@ -445,6 +446,16 @@ class LevelRender extends dn.Process {
 		return rectBleeps[rectBleeps.length-1];
 	}
 
+	function updateBgParallax() {
+		var level = editor.curLevel;
+		var i = 0;
+
+		for ( img in bgImages ) {
+			bgImages[i].setPosition(Editor.ME.camera.getBgParallaxOffsetX(level.bgParallaxes[i]), Editor.ME.camera.getBgParallaxOffsetY(level.bgParallaxes[i]));
+
+			i++;
+		}
+	}
 
 	function renderBg() {
 		var level = editor.curLevel;
@@ -468,6 +479,13 @@ class LevelRender extends dn.Process {
 				if( tt!=null ) {
 					bgImages[i].tile = tt.tile;
 					bgImages[i].setPosition( tt.x, tt.y );
+
+					// TODO: To make parallax work, you have to do this sort of thing...
+					// 		 for each tt, based on their parallax properties (have to store that)...
+					//		 and you have to update that in some kind of step because this render
+					//		 does NOT run every frame!
+					// bgImages[i].setPosition( Editor.ME.camera.getBgParallaxOffsetX(null), tt.y );
+					
 					bgImages[i].scaleX = tt.scaleX;
 					bgImages[i].scaleY = tt.scaleY;
 					bgImages[i].alignPivotX = tt.alignPivotX;

@@ -29,6 +29,8 @@ class Level {
 	public var bgPivotY: Float;
 	public var useAutoIdentifier: Bool;
 
+	public var bgParallaxes : Array<Null<{ x:Float, y:Float }>> = [];
+
 	@:allow(ui.LevelInstanceForm)
 	@:allow(ui.modal.panel.LevelInstancePanel)
 	var bgColor : Null<UInt>;
@@ -501,13 +503,13 @@ class Level {
 		*/
 	}
 
-	public function getBgTileInfosArray() : Null<Array<{ imgData:data.DataTypes.CachedImage, tx:Float, ty:Float, tw:Float, th:Float, dispX:Int, dispY:Int, sx:Float, sy:Float }>> {
+	public function getBgTileInfosArray() : Null<Array<{ imgData:data.DataTypes.CachedImage, tx:Float, ty:Float, tw:Float, th:Float, dispX:Int, dispY:Int, sx:Float, sy:Float, px:Float, py:Float }>> {
 		if( !hasBgImage() )
 			return null;
 
 		// TODO: this is the SAME flipping code as in Background.hx!!!!!
 
-		var output = new Array<{ imgData:data.DataTypes.CachedImage, tx:Float, ty:Float, tw:Float, th:Float, dispX:Int, dispY:Int, sx:Float, sy:Float }>();
+		var output = new Array<{ imgData:data.DataTypes.CachedImage, tx:Float, ty:Float, tw:Float, th:Float, dispX:Int, dispY:Int, sx:Float, sy:Float, px:Float, py:Float }>();
 		var i = 0;
 
 		for ( _img in background.backgrounds ) {
@@ -515,12 +517,15 @@ class Level {
 			
 			if( data==null ) {
 				output.push(null);
+				bgParallaxes.push(null);
 			}
 			else {
 				var baseTileWid = data.pixels.width;
 				var baseTileHei = data.pixels.height;
 				var sx = 1.0;
 				var sy = 1.0;
+				var px = 0.0;
+				var py = 0.0;
 				switch _img.pos {
 					case null:
 						throw "bgPos should not be null";
@@ -542,6 +547,8 @@ class Level {
 
 					case Parallax:
 						// huh
+						px = _img.parallaxX;
+						py = _img.parallaxY;
 				}
 
 				// Crop tile
@@ -558,6 +565,8 @@ class Level {
 					dispY: Std.int( _img.pivotY * (pxHei - subTileHei*sy) ),
 					sx: sx,
 					sy: sy,
+					px: px,
+					py: py,
 				} );
 			}
 
@@ -568,6 +577,9 @@ class Level {
 	}
 
 	public function createBgTiledTextures(?p:h2d.Object) : Null<Array<dn.heaps.TiledTexture>> {
+		// Free array
+		bgParallaxes = [];
+
 		if ( !hasBgImage() )
 			return null;
 
@@ -601,6 +613,7 @@ class Level {
 				var tt = new dn.heaps.TiledTexture(w, h, t, p);
 				tt.scaleX = bgInf.sx;
 				tt.scaleY = bgInf.sy;
+
 				if( tile ) {
 					tt.alignPivotX = _img.pivotX;
 					tt.alignPivotY = _img.pivotY;
@@ -611,8 +624,16 @@ class Level {
 				}
 
 				output.push(tt);
-				
+				bgParallaxes.push( {
+					x: bgInf.px,
+					y: bgInf.py,
+				} );
 			}
+			else {
+				bgParallaxes.push(null);
+			}
+
+
 			i++;
 		}
 

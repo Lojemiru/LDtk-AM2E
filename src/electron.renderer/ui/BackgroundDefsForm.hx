@@ -356,6 +356,26 @@ class BackgroundDefsForm {
 				));
 			}
 		}
+
+		var i = Input.linkToHtmlInput( curBackground.repeatX, jForm.find("input#repeatX") );
+		i.linkEvent( BackgroundDefChanged(curBackground) );
+
+		var i = Input.linkToHtmlInput( curBackground.repeatY, jForm.find("input#repeatY") );
+		i.linkEvent( BackgroundDefChanged(curBackground) );
+
+		var i = Input.linkToHtmlInput( curBackground.parallaxX, jForm.find("input[name='parallaxFactorX']") );
+		i.setBounds(-1,1);
+		i.enablePercentageMode(false);
+		i.onChange = ()->{
+			editor.ge.emit(BackgroundDefChanged(curBackground));
+		}
+
+		var i = Input.linkToHtmlInput( curBackground.parallaxY, jForm.find("input[name='parallaxFactorY']") );
+		i.setBounds(-1,1);
+		i.enablePercentageMode(false);
+		i.onChange = ()->{
+			editor.ge.emit(BackgroundDefChanged(curBackground));
+		}
 	}
 
 	function onCreateBackground(anchor:js.jquery.JQuery) {
