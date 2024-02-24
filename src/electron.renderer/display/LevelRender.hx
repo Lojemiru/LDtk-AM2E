@@ -451,8 +451,10 @@ class LevelRender extends dn.Process {
 		var i = 0;
 
 		for ( img in bgImages ) {
-			bgImages[i].setPosition(Editor.ME.camera.getBgParallaxOffsetX(level.bgParallaxes[i]), Editor.ME.camera.getBgParallaxOffsetY(level.bgParallaxes[i]));
-
+			bgImages[i].setPosition(Editor.ME.camera.getBgParallaxOffsetX(level.bgParallaxes[i]), 
+									Editor.ME.camera.getBgParallaxOffsetY(level.bgParallaxes[i])
+									);
+			
 			i++;
 		}
 	}
@@ -468,17 +470,21 @@ class LevelRender extends dn.Process {
 		var tts = level.createBgTiledTextures();
 		var i = 0;
 
+		for ( img in bgImages ) {
+			root.removeChild(img);
+		}
+
 		if ( tts!=null ) {
-			for ( img in bgImages ) {
-				root.removeChild(img);
-			}
 
 			bgImages = [];
 			for ( tt in tts ) {
 				bgImages.push(new dn.heaps.TiledTexture(1, 1));
 				if( tt!=null ) {
 					bgImages[i].tile = tt.tile;
-					bgImages[i].setPosition( tt.x, tt.y );
+					// bgImages[i].setPosition( tt.x, tt.y );
+					bgImages[i].setPosition(Editor.ME.camera.getBgParallaxOffsetX(level.bgParallaxes[i]), 
+									Editor.ME.camera.getBgParallaxOffsetY(level.bgParallaxes[i])
+									);
 
 					// TODO: To make parallax work, you have to do this sort of thing...
 					// 		 for each tt, based on their parallax properties (have to store that)...
@@ -635,6 +641,7 @@ class LevelRender extends dn.Process {
 		clearTemp();
 		renderBounds();
 		renderGrid();
+
 		renderBg();
 
 		for(ld in editor.project.defs.layers)

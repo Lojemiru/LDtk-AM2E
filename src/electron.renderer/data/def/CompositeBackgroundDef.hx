@@ -45,6 +45,7 @@ class CompositeBackgroundDef {
 	public static function fromJson(p:Project, json:ldtk.Json.CompositeBackgroundDefJson) {
 		var td = new CompositeBackgroundDef( p, data.JsonTools.readInt(json.uid) );
 		td.tags = Tags.fromJson(json.tags);
+		td.identifier = json.identifier;
 
 		if ( json.backgrounds != null)
 			for ( bgJson in JsonTools.readArray(json.backgrounds) )

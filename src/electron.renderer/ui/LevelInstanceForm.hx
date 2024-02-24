@@ -275,7 +275,6 @@ class LevelInstanceForm {
 			}
 		}
 
-		var oldBg = level.background;
 		jSelect.change( ev->{
 			var uid = Std.parseInt( jSelect.val() );
 			if( !M.isValidNumber(uid) )
@@ -285,7 +284,12 @@ class LevelInstanceForm {
 
 			function _apply() {
 				level.background = newBg;
-				level.backgroundUid = newBg.uid;
+
+				if (newBg != null)
+					level.backgroundUid = newBg.uid;
+				else
+					level.backgroundUid = null;
+
 				editor.ge.emit( LevelSettingsChanged(level) );
 			}
 

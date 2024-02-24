@@ -334,18 +334,18 @@ class Camera extends dn.Process {
 				+ ( li.def.parallaxScaling ? 0 : -li.pxHei*0.5*li.def.parallaxFactorY );
 	}
 
-	public inline function getBgParallaxOffsetX(bg:{ x:Float, y:Float }) : Float {
+	public inline function getBgParallaxOffsetX(bg:{ x:Float, y:Float, offsetX:Float, offsetY:Float }) : Float {
 		if (bg==null)
 			return 0;
 		else
-			return levelX * bg.x;
+			return (levelX * bg.x) + bg.offsetX;
 	}
 
-	public inline function getBgParallaxOffsetY(bg:{ x:Float, y:Float }) : Float {
+	public inline function getBgParallaxOffsetY(bg:{ x:Float, y:Float, offsetX:Float, offsetY:Float }) : Float {
 		if (bg==null)
 			return 0;
 		else
-			return levelY * bg.y;
+			return (levelY * bg.y) + bg.offsetY;
 	}
 
 

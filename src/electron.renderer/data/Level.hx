@@ -29,7 +29,7 @@ class Level {
 	public var bgPivotY: Float;
 	public var useAutoIdentifier: Bool;
 
-	public var bgParallaxes : Array<Null<{ x:Float, y:Float }>> = [];
+	public var bgParallaxes : Array<Null<{ x:Float, y:Float, offsetX:Float, offsetY:Float }>> = [];
 
 	@:allow(ui.LevelInstanceForm)
 	@:allow(ui.modal.panel.LevelInstancePanel)
@@ -503,13 +503,13 @@ class Level {
 		*/
 	}
 
-	public function getBgTileInfosArray() : Null<Array<{ imgData:data.DataTypes.CachedImage, tx:Float, ty:Float, tw:Float, th:Float, dispX:Int, dispY:Int, sx:Float, sy:Float, px:Float, py:Float }>> {
+	public function getBgTileInfosArray() : Null<Array<{ imgData:data.DataTypes.CachedImage, tx:Float, ty:Float, tw:Float, th:Float, dispX:Int, dispY:Int, sx:Float, sy:Float, px:Float, py:Float, repeatX:Bool, repeatY:Bool }>> {
 		if( !hasBgImage() )
 			return null;
 
 		// TODO: this is the SAME flipping code as in Background.hx!!!!!
 
-		var output = new Array<{ imgData:data.DataTypes.CachedImage, tx:Float, ty:Float, tw:Float, th:Float, dispX:Int, dispY:Int, sx:Float, sy:Float, px:Float, py:Float }>();
+		var output = new Array<{ imgData:data.DataTypes.CachedImage, tx:Float, ty:Float, tw:Float, th:Float, dispX:Int, dispY:Int, sx:Float, sy:Float, px:Float, py:Float, repeatX:Bool, repeatY:Bool }>();
 		var i = 0;
 
 		for ( _img in background.backgrounds ) {
@@ -567,6 +567,8 @@ class Level {
 					sy: sy,
 					px: px,
 					py: py,
+					repeatX: _img.repeatX,
+					repeatY: _img.repeatY,
 				} );
 			}
 
@@ -605,9 +607,11 @@ class Level {
 				if (_img.pos == ldtk.Json.BgImagePos.Repeat || _img.pos == ldtk.Json.BgImagePos.Parallax) {
 					tile = true;
 
-					// TODO: we need to allow for DISABLING these lines independently to allow for vertical/horizontal tiling split
-					w = pxWid;
-					h = pxHei;
+					if (_img.repeatX)
+						w = pxWid;
+
+					if (_img.repeatY)
+						h = pxHei;
 				}
 
 				var tt = new dn.heaps.TiledTexture(w, h, t, p);
@@ -618,7 +622,8 @@ class Level {
 					tt.alignPivotX = _img.pivotX;
 					tt.alignPivotY = _img.pivotY;
 				}
-				else {
+
+				if( _img.pos != ldtk.Json.BgImagePos.Repeat ) {
 					tt.x = bgInf.dispX;
 					tt.y = bgInf.dispY;
 				}
@@ -627,6 +632,8 @@ class Level {
 				bgParallaxes.push( {
 					x: bgInf.px,
 					y: bgInf.py,
+					offsetX: bgInf.dispX,
+					offsetY: bgInf.dispY,
 				} );
 			}
 			else {
