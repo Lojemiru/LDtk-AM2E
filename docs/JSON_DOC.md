@@ -80,6 +80,7 @@ Value | Type | Description
 `__bgColor`<br/> ![Generic badge](https://img.shields.io/badge/Added_0.6.0-gray.svg)  | String<br/><small class="color"> *Hex color "#rrggbb"* </small> | Background color of the level (same as `bgColor`, except the default value is automatically used here if its value is `null`)
 `__bgPos`<br/><sup class="only">Only *If background image exists*</sup><br/> ![Generic badge](https://img.shields.io/badge/Added_0.7.0-gray.svg)  | Object&nbsp;*(can&nbsp;be&nbsp;`null`)* | Position informations of the background image, if there is one.<br/> This object contains the following fields:<br/> <ul class='subFields'><li>**`cropRect`** **(Array of Float**) : *An array of 4 float values describing the cropped sub-rectangle of the displayed background image. This cropping happens when original is larger than the level bounds. Array format: `[ cropX, cropY, cropWidth, cropHeight ]`*</li><li>**`scale`** **(Array of Float**) : *An array containing the `[scaleX,scaleY]` values of the **cropped** background image, depending on `bgPos` option.*</li><li>**`topLeftPx`** **(Array of Int**) : *An array containing the `[x,y]` pixel coordinates of the top-left corner of the **cropped** background image, depending on `bgPos` option.*</li></ul>
 `__neighbours`<br/> ![Generic badge](https://img.shields.io/badge/Added_0.6.0-gray.svg) ![Generic badge](https://img.shields.io/badge/Changed_1.4.0-gray.svg)  | Array&nbsp;of&nbsp;Object | An array listing all other levels touching this one on the world map. Since 1.4.0, this includes levels that overlap in the same world layer, or in nearby world layers.<br/>		Only relevant for world layouts where level spatial positioning is manual (ie. GridVania, Free). For Horizontal and Vertical layouts, this array is always empty.<br/> This array contains objects with the following fields:<br/> <ul class='subFields'><li>**`dir`** **(String**)  ![Generic badge](https://img.shields.io/badge/Changed_1.5.3-green.svg)  : *A lowercase string tipping on the level location (`n`orth, `s`outh, `w`est, `e`ast).<br/>		Since 1.4.0, this value can also be `<` (neighbour depth is lower), `>` (neighbour depth is greater) or `o` (levels overlap and share the same world depth).<br/>		Since 1.5.3, this value can also be `nw`,`ne`,`sw` or `se` for levels only touching corners.*</li><li>**`levelIid`** **(String**)  ![Generic badge](https://img.shields.io/badge/Added_1.0.0-gray.svg)  : *Neighbour Instance Identifier*</li><li>**`levelUid`** **(Int *(can be `null`)***)  ![Generic badge](https://img.shields.io/badge/Removed_1.2.0-gray.svg)  : ***WARNING**: this deprecated value is no longer exported since version 1.2.0* ** *Replaced by: `levelIid`*</li></ul>
+`backgroundUid` | Int&nbsp;*(can&nbsp;be&nbsp;`null`)* | 
 `bgRelPath`<br/> ![Generic badge](https://img.shields.io/badge/Added_0.7.0-gray.svg)  | String&nbsp;*(can&nbsp;be&nbsp;`null`)* | The *optional* relative path to the level background image.
 `externalRelPath`<br/> ![Generic badge](https://img.shields.io/badge/Added_0.7.0-gray.svg)  | String&nbsp;*(can&nbsp;be&nbsp;`null`)* | This value is not null if the project option "*Save levels separately*" is enabled. In this case, this **relative** path points to the level Json file.
 `fieldInstances`<br/> ![Generic badge](https://img.shields.io/badge/Changed_0.8.0-gray.svg)  | Array&nbsp;of&nbsp;[Field&nbsp;instance](#ldtk-FieldInstanceJson) | An array containing this level custom field values.
@@ -96,7 +97,7 @@ Value | Type | Description
 `bgColor`<br/><sup class="internal">*Only used by editor*</sup><br/> ![Generic badge](https://img.shields.io/badge/Added_0.6.0-gray.svg)  | String&nbsp;*(can&nbsp;be&nbsp;`null`)*<br/><small class="color"> *Hex color "#rrggbb"* </small> | Background color of the level. If `null`, the project `defaultLevelBgColor` should be used.
 `bgPivotX`<br/><sup class="internal">*Only used by editor*</sup><br/> ![Generic badge](https://img.shields.io/badge/Added_0.7.0-gray.svg)  | Float | Background image X pivot (0-1)
 `bgPivotY`<br/><sup class="internal">*Only used by editor*</sup><br/> ![Generic badge](https://img.shields.io/badge/Added_0.7.0-gray.svg)  | Float | Background image Y pivot (0-1)
-`bgPos`<br/><sup class="internal">*Only used by editor*</sup><br/> ![Generic badge](https://img.shields.io/badge/Added_0.7.0-gray.svg)  | Enum&nbsp;*(can&nbsp;be&nbsp;`null`)* | An enum defining the way the background image (if any) is positioned on the level. See `__bgPos` for resulting position info.<br/> Possible values: &lt;`null`&gt;, `Unscaled`, `Contain`, `Cover`, `CoverDirty`, `Repeat`
+`bgPos`<br/><sup class="internal">*Only used by editor*</sup><br/> ![Generic badge](https://img.shields.io/badge/Added_0.7.0-gray.svg)  | Enum&nbsp;*(can&nbsp;be&nbsp;`null`)* | An enum defining the way the background image (if any) is positioned on the level. See `__bgPos` for resulting position info.<br/> Possible values: &lt;`null`&gt;, `Unscaled`, `Contain`, `Cover`, `CoverDirty`, `Repeat`, `Parallax`
 `useAutoIdentifier`<br/><sup class="internal">*Only used by editor*</sup><br/> ![Generic badge](https://img.shields.io/badge/Added_0.9.0-gray.svg)  | Bool | If TRUE, the level identifier will always automatically use the naming pattern as defined in `Project.levelNamePattern`. Becomes FALSE if the identifier is manually modified by user.
 
 <a id="ldtk-LayerInstanceJson" name="ldtk-LayerInstanceJson"></a>
@@ -200,6 +201,7 @@ The 2 only definition types you might need here are **Tilesets** and **Enums**.
 
 Value | Type | Description
 -- | -- | --
+`compositeBackgrounds` | Array&nbsp;of&nbsp;[Composite&nbsp;Background&nbsp;definition](#ldtk-CompositeBackgroundDefJson) | All composite backgrounds
 `entities` | Array&nbsp;of&nbsp;[Entity&nbsp;definition](#ldtk-EntityDefJson) | All entities definitions, including their custom fields
 `enums` | Array&nbsp;of&nbsp;[Enum&nbsp;definition](#ldtk-EnumDefJson) | All internal enums
 `externalEnums` | Array&nbsp;of&nbsp;[Enum&nbsp;definition](#ldtk-EnumDefJson) | Note: external enums are exactly the same as `enums`, except they have a `relPath` to point to an external source file.
@@ -296,7 +298,7 @@ Value | Type | Description
 `pivotX` | Float | Pivot X coordinate (from 0 to 1.0)
 `pivotY` | Float | Pivot Y coordinate (from 0 to 1.0)
 `tileRect`<br/> ![Generic badge](https://img.shields.io/badge/Added_1.0.0-gray.svg)  | [Tileset&nbsp;rectangle](#ldtk-TilesetRect)&nbsp;*(can&nbsp;be&nbsp;`null`)* | An object representing a rectangle from an existing Tileset
-`tileRenderMode`<br/> ![Generic badge](https://img.shields.io/badge/Changed_0.8.1-gray.svg)  | Enum | An enum describing how the the Entity tile is rendered inside the Entity bounds.<br/> Possible values: `Cover`, `FitInside`, `Repeat`, `Stretch`, `FullSizeCropped`, `FullSizeUncropped`, `NineSlice`
+`tileRenderMode`<br/> ![Generic badge](https://img.shields.io/badge/Changed_0.8.1-gray.svg)  | Enum | An enum describing how the Entity tile is rendered inside the Entity bounds.<br/> Possible values: `Cover`, `FitInside`, `Repeat`, `Stretch`, `FullSizeCropped`, `FullSizeUncropped`, `NineSlice`
 `tilesetId` | Int&nbsp;*(can&nbsp;be&nbsp;`null`)* | Tileset ID used for optional tile display
 `uiTileRect`<br/> ![Generic badge](https://img.shields.io/badge/Added_1.4.0-gray.svg)  | [Tileset&nbsp;rectangle](#ldtk-TilesetRect)&nbsp;*(can&nbsp;be&nbsp;`null`)* | This tile overrides the one defined in `tileRect` in the UI
 `uid` | Int | Unique Int identifier
@@ -425,3 +427,27 @@ Value | Type | Description
 `tileRect`<br/> ![Generic badge](https://img.shields.io/badge/Added_1.3.0-gray.svg)  | [Tileset&nbsp;rectangle](#ldtk-TilesetRect)&nbsp;*(can&nbsp;be&nbsp;`null`)* | Optional tileset rectangle to represents this value
 ~~`tileId`~~<br/><sup class="deprecated">*DEPRECATED!*</sup><br/> ![Generic badge](https://img.shields.io/badge/Removed_1.4.0-gray.svg)  | Int&nbsp;*(can&nbsp;be&nbsp;`null`)* | **WARNING**: this deprecated value is no longer exported since version 1.4.0<br/> <br/> Replaced by: `tileRect`
 ~~`__tileSrcRect`~~<br/><sup class="deprecated">*DEPRECATED!*</sup><br/> ![Generic badge](https://img.shields.io/badge/Added_0.4.0-gray.svg) ![Generic badge](https://img.shields.io/badge/Removed_1.4.0-gray.svg)  | Array&nbsp;of&nbsp;Int&nbsp;*(can&nbsp;be&nbsp;`null`)* | **WARNING**: this deprecated value is no longer exported since version 1.4.0<br/> <br/> Replaced by: `tileRect`
+
+<a id="ldtk-CompositeBackgroundDefJson" name="ldtk-CompositeBackgroundDefJson"></a>
+## 3.5. Composite Background definition   
+Value | Type | Description
+-- | -- | --
+`backgrounds` | Array&nbsp;of&nbsp;[Background&nbsp;definition](#ldtk-BackgroundDefJson) | 
+`identifier` | String | User defined unique identifier
+`tags` | Array&nbsp;of&nbsp;String | An array of user-defined tags to organize the Composite Backgrounds
+`uid` | Int | Unique Int identifier
+
+<a id="ldtk-BackgroundDefJson" name="ldtk-BackgroundDefJson"></a>
+## 3.5.1. Background definition   
+Value | Type | Description
+-- | -- | --
+`identifier` | String | User defined unique identifier
+`parallaxX` | Float | 
+`parallaxY` | Float | 
+`pivotX` | Float | 
+`pivotY` | Float | 
+`pos` | Enum | Possible values: `Unscaled`, `Contain`, `Cover`, `CoverDirty`, `Repeat`, `Parallax`
+`relPath` | String&nbsp;*(can&nbsp;be&nbsp;`null`)* | 
+`repeatX` | Bool | 
+`repeatY` | Bool | 
+`uid` | Int | Unique Int identifier

@@ -79,11 +79,17 @@
 					"TilesetRect": {
 						"$ref": "#/otherTypes/TilesetRect"
 					},
+					"BackgroundDef": {
+						"$ref": "#/otherTypes/BackgroundDef"
+					},
 					"FieldInstance": {
 						"$ref": "#/otherTypes/FieldInstance"
 					},
 					"EntityInstance": {
 						"$ref": "#/otherTypes/EntityInstance"
+					},
+					"CompositeBackgroundDef": {
+						"$ref": "#/otherTypes/CompositeBackgroundDef"
 					},
 					"Definitions": {
 						"$ref": "#/otherTypes/Definitions"
@@ -236,6 +242,93 @@
 					"description": "Width in pixels",
 					"type": [
 						"integer"
+					]
+				}
+			},
+			"type": [
+				"object"
+			]
+		},
+		"BackgroundDef": {
+			"title": "Background definition",
+			"required": [
+				"identifier",
+				"parallaxX",
+				"parallaxY",
+				"pivotX",
+				"pivotY",
+				"pos",
+				"repeatX",
+				"repeatY",
+				"uid"
+			],
+			"additionalProperties": false,
+			"properties": {
+				"parallaxX": {
+					"description": "",
+					"type": [
+						"number"
+					]
+				},
+				"pivotX": {
+					"description": "",
+					"type": [
+						"number"
+					]
+				},
+				"parallaxY": {
+					"description": "",
+					"type": [
+						"number"
+					]
+				},
+				"pos": {
+					"description": "Possible values: `Unscaled`, `Contain`, `Cover`, `CoverDirty`, `Repeat`, `Parallax`, `null`",
+					"enum": [
+						"Unscaled",
+						"Contain",
+						"Cover",
+						"CoverDirty",
+						"Repeat",
+						"Parallax",
+						null
+					]
+				},
+				"uid": {
+					"description": "Unique Int identifier",
+					"type": [
+						"integer"
+					]
+				},
+				"repeatY": {
+					"description": "",
+					"type": [
+						"boolean"
+					]
+				},
+				"repeatX": {
+					"description": "",
+					"type": [
+						"boolean"
+					]
+				},
+				"identifier": {
+					"description": "User defined unique identifier",
+					"type": [
+						"string"
+					]
+				},
+				"pivotY": {
+					"description": "",
+					"type": [
+						"number"
+					]
+				},
+				"relPath": {
+					"description": "",
+					"type": [
+						"string",
+						"null"
 					]
 				}
 			},
@@ -437,10 +530,58 @@
 				"object"
 			]
 		},
+		"CompositeBackgroundDef": {
+			"title": "Composite Background definition",
+			"required": [
+				"backgrounds",
+				"identifier",
+				"tags",
+				"uid"
+			],
+			"additionalProperties": false,
+			"properties": {
+				"backgrounds": {
+					"description": "",
+					"items": {
+						"$ref": "#/otherTypes/BackgroundDef"
+					},
+					"type": [
+						"array"
+					]
+				},
+				"uid": {
+					"description": "Unique Int identifier",
+					"type": [
+						"integer"
+					]
+				},
+				"identifier": {
+					"description": "User defined unique identifier",
+					"type": [
+						"string"
+					]
+				},
+				"tags": {
+					"description": "An array of user-defined tags to organize the Composite Backgrounds",
+					"items": {
+						"type": [
+							"string"
+						]
+					},
+					"type": [
+						"array"
+					]
+				}
+			},
+			"type": [
+				"object"
+			]
+		},
 		"Definitions": {
 			"description": "If you're writing your own LDtk importer, you should probably just ignore *most* stuff in the `defs` section, as it contains data that are mostly important to the editor. To keep you away from the `defs` section and avoid some unnecessary JSON parsing, important data from definitions is often duplicated in fields prefixed with a double underscore (eg. `__identifier` or `__type`).  The 2 only definition types you might need here are **Tilesets** and **Enums**.",
 			"title": "Definitions",
 			"required": [
+				"compositeBackgrounds",
 				"entities",
 				"enums",
 				"externalEnums",
@@ -454,6 +595,15 @@
 					"description": "All tilesets",
 					"items": {
 						"$ref": "#/otherTypes/TilesetDef"
+					},
+					"type": [
+						"array"
+					]
+				},
+				"compositeBackgrounds": {
+					"description": "All composite backgrounds",
+					"items": {
+						"$ref": "#/otherTypes/CompositeBackgroundDef"
 					},
 					"type": [
 						"array"
@@ -637,7 +787,7 @@
 					]
 				},
 				"tileRenderMode": {
-					"description": "An enum describing how the the Entity tile is rendered inside the Entity bounds. Possible values: `Cover`, `FitInside`, `Repeat`, `Stretch`, `FullSizeCropped`, `FullSizeUncropped`, `NineSlice`",
+					"description": "An enum describing how the Entity tile is rendered inside the Entity bounds. Possible values: `Cover`, `FitInside`, `Repeat`, `Stretch`, `FullSizeCropped`, `FullSizeUncropped`, `NineSlice`",
 					"enum": [
 						"Cover",
 						"FitInside",
@@ -1678,6 +1828,13 @@
 					"description": "Unique instance identifier",
 					"type": [
 						"string"
+					]
+				},
+				"backgroundUid": {
+					"description": "",
+					"type": [
+						"integer",
+						"null"
 					]
 				},
 				"pxHei": {
