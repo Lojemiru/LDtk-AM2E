@@ -91,6 +91,9 @@
 					"CompositeBackgroundDef": {
 						"$ref": "#/otherTypes/CompositeBackgroundDef"
 					},
+					"TocFieldInstance": {
+						"$ref": "#/otherTypes/TocFieldInstance"
+					},
 					"Definitions": {
 						"$ref": "#/otherTypes/Definitions"
 					},
@@ -577,6 +580,35 @@
 				"object"
 			]
 		},
+		"TocFieldInstance": {
+			"title": "ldtk.TocFieldInstance",
+			"required": [
+				"__identifier",
+				"__type",
+				"__value"
+			],
+			"additionalProperties": false,
+			"properties": {
+				"__type": {
+					"description": "",
+					"type": [
+						"string"
+					]
+				},
+				"__identifier": {
+					"description": "",
+					"type": [
+						"string"
+					]
+				},
+				"__value": {
+					"description": ""
+				}
+			},
+			"type": [
+				"object"
+			]
+		},
 		"Definitions": {
 			"description": "If you're writing your own LDtk importer, you should probably just ignore *most* stuff in the `defs` section, as it contains data that are mostly important to the editor. To keep you away from the `defs` section and avoid some unnecessary JSON parsing, important data from definitions is often duplicated in fields prefixed with a double underscore (eg. `__identifier` or `__type`).  The 2 only definition types you might need here are **Tilesets** and **Enums**.",
 			"title": "Definitions",
@@ -1054,7 +1086,13 @@
 					]
 				},
 				"fields": {
-					"description": "An object containing the values of all entity fields with the `exportToToc` option enabled. This object typing depends on actual field value types."
+					"description": "An object containing the values of all entity fields with the `exportToToc` option enabled. This object typing depends on actual field value types.",
+					"items": {
+						"$ref": "#/otherTypes/TocFieldInstance"
+					},
+					"type": [
+						"array"
+					]
 				},
 				"iids": {
 					"description": "IID information of this instance",

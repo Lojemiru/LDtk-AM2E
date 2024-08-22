@@ -235,6 +235,9 @@
 					"CompositeBackgroundDef": {
 						"$ref": "#/otherTypes/CompositeBackgroundDef"
 					},
+					"TocFieldInstance": {
+						"$ref": "#/otherTypes/TocFieldInstance"
+					},
 					"Definitions": {
 						"$ref": "#/otherTypes/Definitions"
 					},
@@ -780,6 +783,35 @@
 					"type": [
 						"array"
 					]
+				}
+			},
+			"type": [
+				"object"
+			]
+		},
+		"TocFieldInstance": {
+			"title": "ldtk.TocFieldInstance",
+			"required": [
+				"__identifier",
+				"__type",
+				"__value"
+			],
+			"additionalProperties": false,
+			"properties": {
+				"__type": {
+					"description": "",
+					"type": [
+						"string"
+					]
+				},
+				"__identifier": {
+					"description": "",
+					"type": [
+						"string"
+					]
+				},
+				"__value": {
+					"description": ""
 				}
 			},
 			"type": [
@@ -1980,7 +2012,13 @@
 					]
 				},
 				"fields": {
-					"description": "An object containing the values of all entity fields with the `exportToToc` option enabled. This object typing depends on actual field value types."
+					"description": "An object containing the values of all entity fields with the `exportToToc` option enabled. This object typing depends on actual field value types.",
+					"items": {
+						"$ref": "#/otherTypes/TocFieldInstance"
+					},
+					"type": [
+						"array"
+					]
 				},
 				"iids": {
 					"description": "IID information of this instance",

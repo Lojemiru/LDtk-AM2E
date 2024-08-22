@@ -607,10 +607,16 @@ class Project {
 							tocEntry.instances.push(refInfo);
 
 						// Entity fields
-						var fields : Dynamic = {};
+						var fields : Array<ldtk.Json.TocFieldInstance> = [];
+						// I DON'T CARE IF THIS CODE SUCKS IT ALREADY SUCKED I SHOULD HAVE ROLLED MY OWN EDITOR
 						for(fi in ei.fieldInstances)
-							if( fi.def.exportToToc )
-								Reflect.setField(fields, fi.def.identifier, fi.getFullJsonValue());
+							if( fi.def.exportToToc ) {
+								fields.push({
+									__identifier: fi.def.identifier,
+									__type: fi.def.getJsonTypeString(),
+									__value: fi.getFullJsonValue(),
+								});
+							}
 
 						// Instance data
 						tocEntry.instancesData.push({
