@@ -1847,7 +1847,7 @@ class Editor extends Page {
 			return;
 		ui.Modal.closeAll();
 		if( needSaving )
-			new ui.modal.dialog.UnsavedChanges( bt, App.ME.loadPage.bind( ()->new Home() ) );
+			new ui.modal.dialog.UnsavedChanges( bt, () -> App.ME.loadPage( ()->new Home() ) );
 		else
 			App.ME.loadPage( ()->new Home(), true );
 	}
@@ -2583,7 +2583,7 @@ class Editor extends Page {
 		var jGuide = new J("#guide");
 		jGuide.empty();
 
-		function _createGuideBlock(?keys:Array<Int>, mouseIconId:Null<String>, label:dn.data.GetText.LocaleString) {
+		function _createGuideBlock(?keys:Array<Int>, mouseIconId:Null<String>, label:LocaleString) {
 			var block = new J('<span/>');
 			block.appendTo(jGuide);
 
