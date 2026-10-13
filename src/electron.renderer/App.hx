@@ -633,6 +633,7 @@ class App extends dn.Process {
 			case C_OpenEnumPanel:
 			case C_OpenTilesetPanel:
 			case C_OpenLevelPanel:
+			case C_OpenCompositeBackgroundPanel:
 			case C_NavUp:
 			case C_NavDown:
 			case C_NavLeft:

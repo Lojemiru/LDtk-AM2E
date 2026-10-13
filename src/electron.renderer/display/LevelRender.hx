@@ -23,7 +23,7 @@ class LevelRender extends dn.Process {
 	var asyncTmpRender : Null<dn.heaps.PixelGrid>;
 
 	var bgColor : h2d.Bitmap;
-	var bgImage : dn.heaps.TiledTexture;
+	var bgImages : Array<dn.heaps.TiledTexture> = [];
 	var bounds : h2d.Graphics;
 	var boundsGlow : h2d.Graphics;
 	var grid : h2d.Graphics;
@@ -46,8 +46,8 @@ class LevelRender extends dn.Process {
 		bgColor = new h2d.Bitmap();
 		root.add(bgColor, Const.DP_BG);
 
-		bgImage = new dn.heaps.TiledTexture(1, 1);
-		root.add(bgImage, Const.DP_BG);
+		//bgImage = new dn.heaps.TiledTexture(1, 1);
+		//root.add(bgImage, Const.DP_BG);
 
 		bounds = new h2d.Graphics();
 		root.add(bounds, Const.DP_UI);
@@ -115,8 +115,10 @@ class LevelRender extends dn.Process {
 				root.y = M.round( editor.camera.height*0.5 - camera.levelY * camera.adjustedZoom );
 				updateGridPos();
 				invalidateGrid();
+				updateBgParallax();
 
 			case ProjectSaved, BeforeProjectSaving:
+				invalidateUiAndBg();
 
 			case ProjectSelected:
 				renderAll();
@@ -268,6 +270,16 @@ class LevelRender extends dn.Process {
 					for( li in editor.curLevel.layerInstances)
 						invalidateLayer(li);
 
+			case BackgroundDefAdded(bg):
+
+			case BackgroundDefRemoved(_), BackgroundDefChanged(_), BackgroundDefSorted:
+				invalidateUiAndBg();
+
+			case CompositeBackgroundDefAdded(td):
+
+			case CompositeBackgroundDefRemoved(_), CompositeBackgroundDefChanged(_), CompositeBackgroundDefSorted:
+				invalidateUiAndBg();
+
 			case EntityDefRemoved, EntityDefChanged, EntityDefSorted:
 				for(li in editor.curLevel.layerInstances)
 					if( li.def.type==Entities )
@@ -415,8 +427,8 @@ class LevelRender extends dn.Process {
 	public inline function bleepEntity(ei:data.inst.EntityInstance, ?overrideColor:dn.Col, spd=1.0) : Bleep {
 		return bleepLayerRectPx(
 			ei._li,
-			Std.int( (ei.x-ei.width*ei.def.pivotX) * ei._li.def.getScale() ),
-			Std.int( (ei.y-ei.height*ei.def.pivotY) * ei._li.def.getScale() ),
+			Std.int( (ei.x-ei.width*ei.getAdjustedPivotX()) * ei._li.def.getScale() ),
+			Std.int( (ei.y-ei.height*ei.getAdjustedPivotY()) * ei._li.def.getScale() ),
 			ei.width,
 			ei.height,
 			overrideColor!=null ? overrideColor : ei.getSmartColor(true),
@@ -434,6 +446,18 @@ class LevelRender extends dn.Process {
 		return rectBleeps[rectBleeps.length-1];
 	}
 
+	function updateBgParallax() {
+		var level = editor.curLevel;
+		var i = 0;
+
+		for ( img in bgImages ) {
+			bgImages[i].setPosition(Editor.ME.camera.getBgParallaxOffsetX(level.bgParallaxes[i]), 
+									Editor.ME.camera.getBgParallaxOffsetY(level.bgParallaxes[i])
+									);
+			
+			i++;
+		}
+	}
 
 	function renderBg() {
 		var level = editor.curLevel;
@@ -443,22 +467,46 @@ class LevelRender extends dn.Process {
 		bgColor.scaleX = editor.curLevel.pxWid;
 		bgColor.scaleY = editor.curLevel.pxHei;
 
-		var tt = level.createBgTiledTexture();
-		if( tt!=null ) {
-			bgImage.tile = tt.tile;
-			bgImage.setPosition( tt.x, tt.y );
-			bgImage.scaleX = tt.scaleX;
-			bgImage.scaleY = tt.scaleY;
-			bgImage.alignPivotX = tt.alignPivotX;
-			bgImage.alignPivotY = tt.alignPivotY;
-			bgImage.visible = true;
-			bgImage.alpha = settings.v.singleLayerMode ? getSingleLayerModeAlpha() : 1;
-			bgImage.filter = settings.v.singleLayerMode ? getSingleLayerModeFilter() : null;
-			bgImage.resize(tt.width, tt.height);
+		var tts = level.createBgTiledTextures();
+		var i = 0;
+
+		for ( img in bgImages ) {
+			root.removeChild(img);
 		}
-		else {
-			bgImage.tile = null;
-			bgImage.visible = false;
+
+		if ( tts!=null ) {
+
+			bgImages = [];
+			for ( tt in tts ) {
+				bgImages.push(new dn.heaps.TiledTexture(1, 1));
+				if( tt!=null ) {
+					bgImages[i].tile = tt.tile;
+					bgImages[i].setPosition(Editor.ME.camera.getBgParallaxOffsetX(level.bgParallaxes[i]), 
+									Editor.ME.camera.getBgParallaxOffsetY(level.bgParallaxes[i])
+									);
+					
+					bgImages[i].scaleX = tt.scaleX;
+					bgImages[i].scaleY = tt.scaleY;
+					bgImages[i].alignPivotX = tt.alignPivotX;
+					bgImages[i].alignPivotY = tt.alignPivotY;
+					bgImages[i].visible = true;
+					bgImages[i].alpha = settings.v.singleLayerMode ? getSingleLayerModeAlpha() : 1;
+					bgImages[i].filter = settings.v.singleLayerMode ? getSingleLayerModeFilter() : null;
+					bgImages[i].resize(tt.width, tt.height);
+				}
+				else {
+					bgImages[i].tile = null;
+					bgImages[i].visible = false;
+				}
+				i++;
+			}
+
+			i = 1;
+
+			for ( img in bgImages ) {
+				root.add(bgImages[bgImages.length - i], Const.DP_BG);
+				i++;
+			}
 		}
 	}
 
@@ -586,6 +634,7 @@ class LevelRender extends dn.Process {
 		clearTemp();
 		renderBounds();
 		renderGrid();
+
 		renderBg();
 
 		for(ld in editor.project.defs.layers)

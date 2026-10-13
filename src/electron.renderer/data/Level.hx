@@ -20,11 +20,16 @@ class Level {
 
 	public var externalRelPath: Null<String>;
 
+	public var background : Null<data.def.CompositeBackgroundDef>;
+	public var backgroundUid : Null<Int>;
+
 	public var bgRelPath: Null<String>;
 	public var bgPos: Null<ldtk.Json.BgImagePos>;
 	public var bgPivotX: Float;
 	public var bgPivotY: Float;
 	public var useAutoIdentifier: Bool;
+
+	public var bgParallaxes : Array<Null<{ x:Float, y:Float, offsetX:Float, offsetY:Float }>> = [];
 
 	@:allow(ui.LevelInstanceForm)
 	@:allow(ui.modal.panel.LevelInstancePanel)
@@ -175,7 +180,12 @@ class Level {
 			__bgColor: JsonTools.writeColor( getBgColor() ),
 			bgColor: JsonTools.writeColor(bgColor, true),
 			useAutoIdentifier: useAutoIdentifier,
-
+			backgroundUid: {
+				if ( backgroundUid==null)
+					null;
+				else
+					backgroundUid;
+			},
 			bgRelPath: bgRelPath,
 			bgPos: JsonTools.writeEnum(bgPos, true),
 			bgPivotX: JsonTools.writeFloat(bgPivotX),
@@ -298,7 +308,10 @@ class Level {
 		l.bgColor = JsonTools.readColor(json.bgColor, true);
 		l.externalRelPath = json.externalRelPath;
 		l.useAutoIdentifier = JsonTools.readBool(json.useAutoIdentifier, false); // older projects should keep their original IDs untouched
-
+		if ( json.backgroundUid!=null ) {
+			l.backgroundUid = JsonTools.readInt( json.backgroundUid, 0 );
+			l.background = p.defs.getCompositeBackgroundDef(l.backgroundUid);
+		}
 		l.bgRelPath = json.bgRelPath;
 		l.bgPos = JsonTools.readEnum(ldtk.Json.BgImagePos, json.bgPos, true);
 		l.bgPivotX = JsonTools.readFloat(json.bgPivotX, 0.5);
@@ -367,7 +380,7 @@ class Level {
 
 
 	public inline function hasBgImage() {
-		return bgRelPath!=null;
+		return background!=null;
 	}
 
 
@@ -401,7 +414,14 @@ class Level {
 		if( !hasBgImage() )
 			return null;
 
-		var data = _project.getOrLoadImage(bgRelPath);
+		// TODO: Actually set this up lol
+		return null;
+
+		/*
+		// TODO: Un-hardcode this
+		var _img = backgrounds[0];
+
+		var data = _project.getOrLoadImage(_img.relPath);
 		if( data==null )
 			return null;
 
@@ -409,7 +429,7 @@ class Level {
 		var baseTileHei = data.pixels.height;
 		var sx = 1.0;
 		var sy = 1.0;
-		switch bgPos {
+		switch _img.pos {
 			case null:
 				throw "bgPos should not be null";
 
@@ -435,15 +455,16 @@ class Level {
 
 		return {
 			imgData: data,
-			tx: bgPivotX * (baseTileWid-subTileWid),
-			ty: bgPivotY * (baseTileHei-subTileHei),
+			tx: _img.pivotX * (baseTileWid-subTileWid),
+			ty: _img.pivotY * (baseTileHei-subTileHei),
 			tw: subTileWid,
 			th: subTileHei,
-			dispX: Std.int( bgPivotX * (pxWid - subTileWid*sx) ),
-			dispY: Std.int( bgPivotY * (pxHei - subTileHei*sy) ),
+			dispX: Std.int( _img.pivotX * (pxWid - subTileWid*sx) ),
+			dispY: Std.int( _img.pivotY * (pxHei - subTileHei*sy) ),
 			sx: sx,
 			sy: sy,
 		}
+		*/
 	}
 
 	public function createBgTiledTexture(?p:h2d.Object) : Null<dn.heaps.TiledTexture> {
@@ -451,10 +472,17 @@ class Level {
 		if( bgInf==null )
 			return null;
 
+		// TODO: Implement this lol
+		return null;
+
+		/*
+		// TODO: Un-hardcode this
+		var _img = backgrounds[0];
+
 		var t = h2d.Tile.fromTexture( bgInf.imgData.tex );
 		t = t.sub(bgInf.tx, bgInf.ty, bgInf.tw, bgInf.th);
 
-		var tile = (bgPos == ldtk.Json.BgImagePos.Repeat);
+		var tile = (_img.pos == ldtk.Json.BgImagePos.Repeat);
 
 		var w = tile ? pxWid : Std.int(bgInf.tw);
 		var h = tile ? pxHei : Std.int(bgInf.th);
@@ -463,8 +491,8 @@ class Level {
 		tt.scaleX = bgInf.sx;
 		tt.scaleY = bgInf.sy;
 		if( tile ) {
-			tt.alignPivotX = bgPivotX;
-			tt.alignPivotY = bgPivotY;
+			tt.alignPivotX = _img.pivotX;
+			tt.alignPivotY = _img.pivotY;
 		}
 		else {
 			tt.x = bgInf.dispX;
@@ -472,6 +500,151 @@ class Level {
 		}
 
 		return tt;
+		*/
+	}
+
+	public function getBgTileInfosArray() : Null<Array<{ imgData:data.DataTypes.CachedImage, tx:Float, ty:Float, tw:Float, th:Float, dispX:Int, dispY:Int, sx:Float, sy:Float, px:Float, py:Float, repeatX:Bool, repeatY:Bool }>> {
+		if( !hasBgImage() )
+			return null;
+
+		// TODO: this is the SAME flipping code as in Background.hx!!!!!
+
+		var output = new Array<{ imgData:data.DataTypes.CachedImage, tx:Float, ty:Float, tw:Float, th:Float, dispX:Int, dispY:Int, sx:Float, sy:Float, px:Float, py:Float, repeatX:Bool, repeatY:Bool }>();
+		var i = 0;
+
+		for ( _img in background.backgrounds ) {
+			var data = _project.getOrLoadImage(_img.relPath);
+			
+			if( data==null ) {
+				output.push(null);
+				bgParallaxes.push(null);
+			}
+			else {
+				var baseTileWid = data.pixels.width;
+				var baseTileHei = data.pixels.height;
+				var sx = 1.0;
+				var sy = 1.0;
+				var px = 0.0;
+				var py = 0.0;
+				switch _img.pos {
+					case null:
+						throw "bgPos should not be null";
+
+					case Unscaled:
+
+					case Contain:
+						sx = sy = M.fmin( pxWid/baseTileWid, pxHei/baseTileHei );
+
+					case Cover:
+						sx = sy = M.fmax( pxWid/baseTileWid, pxHei/baseTileHei );
+
+					case CoverDirty:
+						sx = pxWid / baseTileWid;
+						sy = pxHei/ baseTileHei;
+
+					case Repeat:
+						// Do nothing, tiling shenanigans are handled in createBgTiledTexture.
+
+					case Parallax:
+						// huh
+						px = _img.parallaxX;
+						py = _img.parallaxY;
+				}
+
+				// Crop tile
+				var subTileWid = M.fmin(baseTileWid, pxWid/sx);
+				var subTileHei = M.fmin(baseTileHei, pxHei/sy);
+
+				output.push( {
+					imgData: data,
+					tx: _img.pivotX * (baseTileWid-subTileWid),
+					ty: _img.pivotY * (baseTileHei-subTileHei),
+					tw: subTileWid,
+					th: subTileHei,
+					dispX: Std.int( _img.pivotX * (pxWid - subTileWid*sx) ),
+					dispY: Std.int( _img.pivotY * (pxHei - subTileHei*sy) ),
+					sx: sx,
+					sy: sy,
+					px: px,
+					py: py,
+					repeatX: _img.repeatX,
+					repeatY: _img.repeatY,
+				} );
+			}
+
+			i++;
+		}
+
+		return output;
+	}
+
+	public function createBgTiledTextures(?p:h2d.Object) : Null<Array<dn.heaps.TiledTexture>> {
+		// Free array
+		bgParallaxes = [];
+
+		if ( !hasBgImage() )
+			return null;
+
+		var bgInfos = getBgTileInfosArray();
+		if ( bgInfos==null )
+			return null;
+
+		var output = new Array<dn.heaps.TiledTexture>();
+		var i = 0;
+
+		for ( bgInf in bgInfos ) {
+			if ( bgInf!=null ) {
+				
+				var _img = background.backgrounds[i];
+
+				var t = h2d.Tile.fromTexture( bgInf.imgData.tex );
+				t = t.sub(bgInf.tx, bgInf.ty, bgInf.tw, bgInf.th);
+
+				var tile = false;
+				var w = Std.int(bgInf.tw);
+				var h = Std.int(bgInf.th);
+
+				if (_img.pos == ldtk.Json.BgImagePos.Repeat || _img.pos == ldtk.Json.BgImagePos.Parallax) {
+					tile = true;
+
+					if (_img.repeatX)
+						w = pxWid;
+
+					if (_img.repeatY)
+						h = pxHei;
+				}
+
+				var tt = new dn.heaps.TiledTexture(w, h, t, p);
+				tt.scaleX = bgInf.sx;
+				tt.scaleY = bgInf.sy;
+
+				if( tile ) {
+					tt.alignPivotX = _img.pivotX;
+					tt.alignPivotY = _img.pivotY;
+				}
+
+				if( _img.pos != ldtk.Json.BgImagePos.Repeat ) {
+					tt.x = bgInf.dispX;
+					tt.y = bgInf.dispY;
+				}
+
+				output.push(tt);
+				bgParallaxes.push( {
+					x: bgInf.px,
+					y: bgInf.py,
+					offsetX: bgInf.dispX,
+					offsetY: bgInf.dispY,
+				} );
+			}
+			else {
+				bgParallaxes.push(null);
+			}
+
+
+			i++;
+		}
+
+		return output;
 	}
 
 
@@ -724,9 +897,11 @@ class Level {
 					}
 				}
 
+			// TODO: Implement this lol
+
 			// Level background images
-			if( _cachedFirstError==NoError && bgRelPath!=null && !_project.isImageLoaded(bgRelPath) )
-				_cachedFirstError = InvalidBgImage;
+			//if( _cachedFirstError==NoError && backgrounds.length > 0 && backgrounds[0].relPath!=null && !_project.isImageLoaded(backgrounds[0].relPath) )
+			//	_cachedFirstError = InvalidBgImage;
 
 			return _cachedFirstError;
 		}

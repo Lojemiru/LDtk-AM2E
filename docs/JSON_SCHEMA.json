@@ -223,11 +223,20 @@
 					"TilesetRect": {
 						"$ref": "#/otherTypes/TilesetRect"
 					},
+					"BackgroundDef": {
+						"$ref": "#/otherTypes/BackgroundDef"
+					},
 					"FieldInstance": {
 						"$ref": "#/otherTypes/FieldInstance"
 					},
 					"EntityInstance": {
 						"$ref": "#/otherTypes/EntityInstance"
+					},
+					"CompositeBackgroundDef": {
+						"$ref": "#/otherTypes/CompositeBackgroundDef"
+					},
+					"TocFieldInstance": {
+						"$ref": "#/otherTypes/TocFieldInstance"
 					},
 					"Definitions": {
 						"$ref": "#/otherTypes/Definitions"
@@ -444,6 +453,93 @@
 				"object"
 			]
 		},
+		"BackgroundDef": {
+			"title": "Background definition",
+			"required": [
+				"identifier",
+				"parallaxX",
+				"parallaxY",
+				"pivotX",
+				"pivotY",
+				"pos",
+				"repeatX",
+				"repeatY",
+				"uid"
+			],
+			"additionalProperties": false,
+			"properties": {
+				"parallaxX": {
+					"description": "",
+					"type": [
+						"number"
+					]
+				},
+				"pivotX": {
+					"description": "",
+					"type": [
+						"number"
+					]
+				},
+				"parallaxY": {
+					"description": "",
+					"type": [
+						"number"
+					]
+				},
+				"pos": {
+					"description": "Possible values: `Unscaled`, `Contain`, `Cover`, `CoverDirty`, `Repeat`, `Parallax`, `null`",
+					"enum": [
+						"Unscaled",
+						"Contain",
+						"Cover",
+						"CoverDirty",
+						"Repeat",
+						"Parallax",
+						null
+					]
+				},
+				"uid": {
+					"description": "Unique Int identifier",
+					"type": [
+						"integer"
+					]
+				},
+				"repeatY": {
+					"description": "",
+					"type": [
+						"boolean"
+					]
+				},
+				"repeatX": {
+					"description": "",
+					"type": [
+						"boolean"
+					]
+				},
+				"identifier": {
+					"description": "User defined unique identifier",
+					"type": [
+						"string"
+					]
+				},
+				"pivotY": {
+					"description": "",
+					"type": [
+						"number"
+					]
+				},
+				"relPath": {
+					"description": "",
+					"type": [
+						"string",
+						"null"
+					]
+				}
+			},
+			"type": [
+				"object"
+			]
+		},
 		"FieldInstance": {
 			"title": "Field instance",
 			"required": [
@@ -510,6 +606,7 @@
 				"__smartColor",
 				"__tags",
 				"defUid",
+				"f",
 				"fieldInstances",
 				"height",
 				"iid",
@@ -617,6 +714,12 @@
 						"integer"
 					]
 				},
+				"f": {
+					"description": "Two-bit integer. First bit determines whether or not this EntityInstance is flipped horizontally, the second bit vertically.",
+					"type": [
+						"integer"
+					]
+				},
 				"__tags": {
 					"description": "Array of tags defined in this Entity definition",
 					"items": {
@@ -639,10 +742,87 @@
 				"object"
 			]
 		},
+		"CompositeBackgroundDef": {
+			"title": "Composite Background definition",
+			"required": [
+				"backgrounds",
+				"identifier",
+				"tags",
+				"uid"
+			],
+			"additionalProperties": false,
+			"properties": {
+				"backgrounds": {
+					"description": "",
+					"items": {
+						"$ref": "#/otherTypes/BackgroundDef"
+					},
+					"type": [
+						"array"
+					]
+				},
+				"uid": {
+					"description": "Unique Int identifier",
+					"type": [
+						"integer"
+					]
+				},
+				"identifier": {
+					"description": "User defined unique identifier",
+					"type": [
+						"string"
+					]
+				},
+				"tags": {
+					"description": "An array of user-defined tags to organize the Composite Backgrounds",
+					"items": {
+						"type": [
+							"string"
+						]
+					},
+					"type": [
+						"array"
+					]
+				}
+			},
+			"type": [
+				"object"
+			]
+		},
+		"TocFieldInstance": {
+			"title": "ldtk.TocFieldInstance",
+			"required": [
+				"__identifier",
+				"__type",
+				"__value"
+			],
+			"additionalProperties": false,
+			"properties": {
+				"__type": {
+					"description": "",
+					"type": [
+						"string"
+					]
+				},
+				"__identifier": {
+					"description": "",
+					"type": [
+						"string"
+					]
+				},
+				"__value": {
+					"description": ""
+				}
+			},
+			"type": [
+				"object"
+			]
+		},
 		"Definitions": {
 			"description": "If you're writing your own LDtk importer, you should probably just ignore *most* stuff in the `defs` section, as it contains data that are mostly important to the editor. To keep you away from the `defs` section and avoid some unnecessary JSON parsing, important data from definitions is often duplicated in fields prefixed with a double underscore (eg. `__identifier` or `__type`).  The 2 only definition types you might need here are **Tilesets** and **Enums**.",
 			"title": "Definitions",
 			"required": [
+				"compositeBackgrounds",
 				"entities",
 				"enums",
 				"externalEnums",
@@ -656,6 +836,15 @@
 					"description": "All tilesets",
 					"items": {
 						"$ref": "#/otherTypes/TilesetDef"
+					},
+					"type": [
+						"array"
+					]
+				},
+				"compositeBackgrounds": {
+					"description": "All composite backgrounds",
+					"items": {
+						"$ref": "#/otherTypes/CompositeBackgroundDef"
 					},
 					"type": [
 						"array"
@@ -1321,6 +1510,7 @@
 			"title": "Entity definition",
 			"required": [
 				"color",
+				"flipAroundPivot",
 				"height",
 				"identifier",
 				"nineSliceBorders",
@@ -1333,6 +1523,8 @@
 				"exportToToc",
 				"fieldDefs",
 				"fillOpacity",
+				"flippableX",
+				"flippableY",
 				"hollow",
 				"keepAspectRatio",
 				"limitBehavior",
@@ -1463,7 +1655,7 @@
 					]
 				},
 				"tileRenderMode": {
-					"description": "An enum describing how the the Entity tile is rendered inside the Entity bounds. Possible values: `Cover`, `FitInside`, `Repeat`, `Stretch`, `FullSizeCropped`, `FullSizeUncropped`, `NineSlice`",
+					"description": "An enum describing how the Entity tile is rendered inside the Entity bounds. Possible values: `Cover`, `FitInside`, `Repeat`, `Stretch`, `FullSizeCropped`, `FullSizeUncropped`, `NineSlice`",
 					"enum": [
 						"Cover",
 						"FitInside",
@@ -1472,6 +1664,12 @@
 						"FullSizeCropped",
 						"FullSizeUncropped",
 						"NineSlice"
+					]
+				},
+				"flippableY": {
+					"description": "If TRUE, the entity instances will be flippable vertically",
+					"type": [
+						"boolean"
 					]
 				},
 				"limitBehavior": {
@@ -1530,6 +1728,12 @@
 						"number"
 					]
 				},
+				"flippableX": {
+					"description": "If TRUE, the entity instances will be flippable horizontally",
+					"type": [
+						"boolean"
+					]
+				},
 				"maxWidth": {
 					"description": "Max pixel width (only applies if the entity is resizable on X)",
 					"type": [
@@ -1559,6 +1763,12 @@
 					"description": "Pixel height",
 					"type": [
 						"integer"
+					]
+				},
+				"flipAroundPivot": {
+					"description": "Defines whether entities flip within bounds (FALSE) or around their pivot point (TRUE).",
+					"type": [
+						"boolean"
 					]
 				},
 				"identifier": {
@@ -1802,7 +2012,13 @@
 					]
 				},
 				"fields": {
-					"description": "An object containing the values of all entity fields with the `exportToToc` option enabled. This object typing depends on actual field value types."
+					"description": "An object containing the values of all entity fields with the `exportToToc` option enabled. This object typing depends on actual field value types.",
+					"items": {
+						"$ref": "#/otherTypes/TocFieldInstance"
+					},
+					"type": [
+						"array"
+					]
 				},
 				"iids": {
 					"description": "IID information of this instance",
@@ -2855,14 +3071,22 @@
 					]
 				},
 				"bgPos": {
-					"description": "An enum defining the way the background image (if any) is positioned on the level. See `__bgPos` for resulting position info. Possible values: &lt;`null`&gt;, `Unscaled`, `Contain`, `Cover`, `CoverDirty`, `Repeat`",
+					"description": "An enum defining the way the background image (if any) is positioned on the level. See `__bgPos` for resulting position info. Possible values: &lt;`null`&gt;, `Unscaled`, `Contain`, `Cover`, `CoverDirty`, `Repeat`, `Parallax`",
 					"enum": [
 						"Unscaled",
 						"Contain",
 						"Cover",
 						"CoverDirty",
 						"Repeat",
+						"Parallax",
 						null
+					]
+				},
+				"backgroundUid": {
+					"description": "",
+					"type": [
+						"integer",
+						"null"
 					]
 				},
 				"pxHei": {

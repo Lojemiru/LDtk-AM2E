@@ -63,6 +63,16 @@ enum GlobalEvent {
 	TilesetDefSorted;
 	TilesetEnumChanged;
 
+	BackgroundDefRemoved(bg:data.Background);
+	BackgroundDefChanged(bg:data.Background);
+	BackgroundDefAdded(bg:data.Background);
+	BackgroundDefSorted;
+
+	CompositeBackgroundDefRemoved(td:data.def.CompositeBackgroundDef);
+	CompositeBackgroundDefChanged(td:data.def.CompositeBackgroundDef);
+	CompositeBackgroundDefAdded(td:data.def.CompositeBackgroundDef);
+	CompositeBackgroundDefSorted;
+
 	EntityInstanceAdded(ei:data.inst.EntityInstance);
 	EntityInstanceRemoved(ei:data.inst.EntityInstance);
 	EntityInstanceChanged(ei:data.inst.EntityInstance);
@@ -215,6 +225,8 @@ enum ClipboardType {
 	CEntityDef;
 	CEnumDef;
 	CTilesetDef;
+	CBackgroundDef;
+	CCompositeBackgroundDef;
 
 	CFieldDef;
 
@@ -284,6 +296,7 @@ enum AppCommand {
 	@k("u") C_OpenEnumPanel;
 	@k("t") C_OpenTilesetPanel;
 	@k("c") C_OpenLevelPanel;
+	@k("b") C_OpenCompositeBackgroundPanel;
 
 	@k("[zqsd] z, [wasd] w, [arrows] up") C_NavUp;
 	@k("[zqsd] s, [wasd] s, [arrows] down") C_NavDown;
